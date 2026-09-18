@@ -3,10 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Quản lý Bệnh nhân — Tâm thần &amp; Huyết áp</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+<title>Quản lý Bệnh mạn tính</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
   // ===== Firebase setup =====
@@ -87,7 +84,7 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
-  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;}
+  body{font-family:'Times New Roman', Times, serif;font-size:15px;line-height:1.5;}
   .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 56px;}
 
   /* Header */
@@ -95,7 +92,7 @@
   .brand{display:flex;align-items:center;gap:12px;}
   .brand-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(155deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow);}
   .brand-mark svg{width:22px;height:22px;}
-  h1{font-family:'Source Serif 4',serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-0.01em;}
+  h1{font-family:'Times New Roman', Times, serif;font-weight:700;font-size:23px;margin:0;letter-spacing:-0.01em;}
   .brand-sub{color:var(--muted);font-size:12.5px;margin-top:1px;}
   .auth-box{display:flex;align-items:center;gap:10px;}
   .role-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 14px 6px 10px;font-size:13px;font-weight:500;box-shadow:var(--shadow);}
@@ -115,20 +112,24 @@
   .btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px;}
   .btn svg{width:14px;height:14px;flex-shrink:0;}
 
-  /* Alerts */
-  .alerts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
-  .alert{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:9px;font-size:13.5px;font-weight:500;border:1px solid transparent;}
-  .alert svg{width:17px;height:17px;flex-shrink:0;}
-  .alert.due{background:var(--warn-tint);color:var(--warn);border-color:color-mix(in srgb, var(--warn) 30%, transparent);}
-  .alert.over{background:var(--danger-tint);color:var(--danger);border-color:color-mix(in srgb, var(--danger) 30%, transparent);}
-  .alert.soon{background:var(--primary-tint);color:var(--primary-dark);border-color:color-mix(in srgb, var(--primary) 30%, transparent);}
-  .alert b{font-weight:700;}
-  .alert .link{margin-left:auto;background:none;border:none;color:inherit;font-weight:700;text-decoration:underline;font-size:12.5px;padding:2px 4px;}
+  /* Alerts (compact) */
+  .alert-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:16px;font-size:13px;}
+  .alert-bar-label{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:700;}
+  .alert-bar-label svg{width:15px;height:15px;color:var(--muted-2);flex-shrink:0;}
+  .alert-chip{border:1px solid transparent;padding:5px 12px;border-radius:999px;font-size:12.5px;font-weight:700;}
+  .alert-chip:hover{filter:brightness(0.95);}
+  .alert-chip.over{background:var(--danger-tint);color:var(--danger);}
+  .alert-chip.due{background:var(--warn-tint);color:var(--warn);}
+  .alert-chip.soon{background:var(--primary-tint);color:var(--primary-dark);}
+  .status-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:16px;font-size:13px;background:var(--primary-tint);color:var(--primary-dark);border:1px solid color-mix(in srgb, var(--primary) 30%, transparent);}
+  .status-banner button{background:none;border:none;color:inherit;font-weight:700;text-decoration:underline;padding:0;font-size:13px;}
 
   /* Stat cards */
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
-  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
-  .stat .num{font-size:26px;font-weight:800;font-family:'Source Serif 4',serif;line-height:1;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);text-align:left;font-family:inherit;cursor:pointer;transition:.12s ease;}
+  .stat:hover{border-color:var(--primary);box-shadow:0 4px 16px rgba(0,0,0,0.09);}
+  .stat:active{transform:translateY(1px);}
+  .stat .num{font-size:26px;font-weight:800;font-family:'Times New Roman', Times, serif;line-height:1;}
   .stat .lbl{color:var(--muted);font-size:12.5px;margin-top:6px;font-weight:500;}
   .stat .sub{color:var(--muted-2);font-size:11px;margin-top:4px;font-weight:500;}
   .stat.accent-mental .num{color:var(--mental);}
@@ -148,23 +149,25 @@
   .filters-row{display:flex;gap:8px;flex-wrap:wrap;}
   .filters-row select{flex:1;min-width:130px;}
   .actions-row{display:flex;gap:8px;align-items:center;}
-  .menu-note{padding:6px 10px 8px;font-size:11.5px;color:var(--muted-2);border-bottom:1px solid var(--border);margin-bottom:2px;}
   .select-filter{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;}
   .select-filter:focus{outline:2px solid var(--primary);outline-offset:-1px;}
-  .menu-wrap{position:relative;}
-  .menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,0.14);padding:6px;display:flex;flex-direction:column;gap:2px;min-width:210px;z-index:20;}
-  .menu button{text-align:left;padding:9px 10px;border:none;background:transparent;border-radius:7px;font-size:13px;color:var(--ink);font-weight:500;}
-  .menu button:hover{background:var(--bg);}
+  .export-options{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .export-opt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);text-align:left;width:100%;}
+  .export-opt:hover{border-color:var(--primary);background:var(--primary-tint);}
+  .export-opt .opt-desc{font-size:12.5px;color:var(--muted);font-weight:500;}
 
   /* Table */
   .tbl-scroll{overflow-x:auto;}
-  table{width:100%;border-collapse:collapse;min-width:920px;}
-  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap;}
-  tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13.5px;}
+  table{width:100%;border-collapse:collapse;min-width:920px;border:1px solid var(--border);}
+  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:11px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:var(--bg);white-space:nowrap;}
+  thead th:last-child{border-right:none;}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;font-size:13.5px;}
+  tbody td:last-child{border-right:none;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:var(--primary-tint);}
   td.name{font-weight:600;}
   td.stt{color:var(--muted-2);font-variant-numeric:tabular-nums;}
+  .badge-group{display:inline-flex;gap:4px;flex-wrap:wrap;}
   .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;}
   .badge.mental{background:var(--mental-tint);color:var(--mental);}
   .badge.bp{background:var(--bp-tint);color:var(--bp);}
@@ -194,7 +197,7 @@
   .modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
   .modal-sm{max-width:400px;}
   .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
-  .modal-head h3{margin:0;font-size:16px;font-family:'Source Serif 4',serif;font-weight:600;}
+  .modal-head h3{margin:0;font-size:17px;font-family:'Times New Roman', Times, serif;font-weight:700;}
   .modal-body{padding:20px;}
   .modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
   .close-x{border:none;background:transparent;color:var(--muted);padding:4px;border-radius:6px;}
@@ -208,10 +211,10 @@
   .field input:focus, .field select:focus{outline:2px solid var(--primary);outline-offset:-1px;}
   .radio-row{display:flex;gap:14px;padding-top:2px;}
   .radio-row label{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink);}
-  .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-  .seg button{flex:1;padding:9px 6px;border:none;background:var(--bg);color:var(--muted);font-size:13px;font-weight:600;border-right:1px solid var(--border);}
-  .seg button:last-child{border-right:none;}
-  .seg button.on{background:var(--primary);color:#fff;}
+  .chip-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{padding:8px 16px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--muted);font-size:13px;font-weight:600;}
+  .chip.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .chip-hint{font-size:11.5px;color:var(--muted-2);margin-top:6px;}
   .pw-row{display:flex;gap:8px;}
   .pw-row input{flex:1;}
   .err-txt{color:var(--danger);font-size:12.5px;min-height:16px;}
@@ -225,11 +228,8 @@
     .toolbar{flex-direction:column;align-items:stretch;}
     .search{max-width:none;}
     .filters-row select{flex:1;min-width:0;}
-    .actions-row{width:100%;}
-    .actions-row .menu-wrap{flex:1;}
-    .actions-row .menu-wrap #export-toggle{width:100%;justify-content:center;}
-    .actions-row #btn-add{flex:1;justify-content:center;}
-    .menu{left:0;right:0;min-width:0;}
+    .actions-row{width:100%;flex-wrap:wrap;}
+    .actions-row button{flex:1;justify-content:center;min-width:120px;}
     .form-grid{grid-template-columns:1fr;}
     thead{display:none;}
     .tbl-scroll{overflow-x:visible;padding:12px;}
@@ -286,7 +286,7 @@ let state = {
   deleteTarget: null,
   formError: '',
   loginError: '',
-  exportMenuOpen: false,
+  importStatus: '',
 };
 
 function todayStr(){
@@ -319,6 +319,34 @@ function categoryLabel(c){
 }
 function categoryBadgeClass(c){
   return c === 'mental' ? 'mental' : c === 'dm' ? 'dm' : 'bp';
+}
+function loaiArray(p){
+  const l = p && p.loai;
+  if(Array.isArray(l)) return l.filter(Boolean);
+  if(typeof l === 'string' && l) return [l];
+  return ['bp'];
+}
+function normalizeVN(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/đ/g,'d').replace(/Đ/g,'D')
+    .toLowerCase();
+}
+function isoFromDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseAnyDate(v){
+  if(v === null || v === undefined || v === '') return '';
+  if(typeof v === 'number'){
+    const d = new Date(Math.round((v - 25569) * 86400 * 1000));
+    return isNaN(d.getTime()) ? '' : isoFromDate(d);
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if(m) return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  return '';
 }
 
 /* ============================= DB WIRING (Firebase Firestore) ============================= */
@@ -366,20 +394,27 @@ function distinctNha(){
 }
 
 function filteredPatients(){
-  const q = state.search.trim().toLowerCase();
+  const q = normalizeVN(state.search.trim());
   return patients
     .map(p => ({...p, _status: computeStatus(p)}))
-    .filter(p => state.category === 'all' ? true : p.loai === state.category)
+    .filter(p => state.category === 'all' ? true : loaiArray(p).includes(state.category))
     .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha)
     .filter(p => {
       if(state.status === 'all') return true;
       if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
+      if(state.status === 'upcoming') return p._status === 'due' || p._status === 'soon';
       if(state.status === 'soon') return p._status === 'soon';
       if(state.status === 'due') return p._status === 'due';
       if(state.status === 'over') return p._status === 'over';
       return true;
     })
-    .filter(p => q ? (p.hoTen||'').toLowerCase().includes(q) : true)
+    .filter(p => {
+      if(!q) return true;
+      const hay = normalizeVN(p.hoTen) + ' ' + normalizeVN(p.nha) + ' ' +
+        (p.ngayKham||'') + ' ' + fmtDate(p.ngayKham) + ' ' +
+        (p.ngayTaiKham||'') + ' ' + fmtDate(p.ngayTaiKham);
+      return hay.toLowerCase().includes(q);
+    })
     .sort((a,b) => {
       const da = parseDate(a.ngayTaiKham), db_ = parseDate(b.ngayTaiKham);
       if(!da && !db_) return 0;
@@ -393,10 +428,10 @@ function counts(){
   const all = patients.map(p => ({...p, _status: computeStatus(p)}));
   return {
     total: all.length,
-    mental: all.filter(p=>p.loai==='mental').length,
-    bp: all.filter(p=>p.loai==='bp').length,
-    dm: all.filter(p=>p.loai==='dm').length,
-    bpdm: all.filter(p=>p.loai==='bp'||p.loai==='dm').length,
+    mental: all.filter(p=>loaiArray(p).includes('mental')).length,
+    bp: all.filter(p=>loaiArray(p).includes('bp')).length,
+    dm: all.filter(p=>loaiArray(p).includes('dm')).length,
+    bpdm: all.filter(p=>loaiArray(p).includes('bp')||loaiArray(p).includes('dm')).length,
     ontrack: all.filter(p=>p._status==='active').length,
     soon: all.filter(p=>p._status==='soon').length,
     due: all.filter(p=>p._status==='due').length,
@@ -411,6 +446,7 @@ function buildRows(list){
     'Họ và tên': p.hoTen || '',
     'Năm sinh': p.namSinh || '',
     'Giới tính': p.gioiTinh || '',
+    'Loại': loaiArray(p).map(categoryLabel).join(', '),
     'Chẩn đoán': p.chanDoan || '',
     'Thuốc': p.thuoc || '',
     'Nhà': p.nha || '',
@@ -420,24 +456,25 @@ function buildRows(list){
   }));
 }
 
-async function exportGroup(kind){
+async function exportGroup(kind, nhaFilterArg){
+  const nf = nhaFilterArg !== undefined ? nhaFilterArg : state.nha;
   const all = patients.map(p => ({...p, _status: computeStatus(p)}))
-    .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha);
+    .filter(p => nf === 'all' ? true : (p.nha||'').trim() === nf);
   let list, filename, sheetName;
-  const nhaSlug = state.nha === 'all' ? '' : ('_' + state.nha.replace(/[^\p{L}\p{N}]+/gu, '-'));
+  const nhaSlug = nf === 'all' ? '' : ('_' + nf.replace(/[^\p{L}\p{N}]+/gu, '-'));
   if(kind === 'mental'){
-    list = all.filter(p => p.loai === 'mental');
+    list = all.filter(p => loaiArray(p).includes('mental'));
     filename = 'Danh_sach_Tam_than' + nhaSlug + '_' + todayStr() + '.xlsx';
     sheetName = 'Tâm thần';
   }else{
-    list = all.filter(p => p.loai === 'bp' || p.loai === 'dm');
+    list = all.filter(p => loaiArray(p).includes('bp') || loaiArray(p).includes('dm'));
     filename = 'Danh_sach_Huyet_ap_Tieu_duong' + nhaSlug + '_' + todayStr() + '.xlsx';
     sheetName = 'Huyet ap - Tieu duong';
   }
   list.sort((a,b)=> (a.hoTen||'').localeCompare(b.hoTen||'', 'vi'));
   const rows = buildRows(list);
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:26},{wch:22},{wch:14},{wch:12},{wch:13},{wch:18}];
+  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:20},{wch:26},{wch:22},{wch:14},{wch:12},{wch:13},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   const buf = XLSX.write(wb, {type:'array', bookType:'xlsx'});
@@ -474,6 +511,7 @@ function render(){
 
   app.innerHTML = `
     ${renderHeader()}
+    ${renderStatusBanner()}
     ${renderAlerts(c)}
     ${renderStats(c)}
     <div class="panel">
@@ -487,6 +525,7 @@ function render(){
   if(state.modal === 'form') renderFormModal();
   if(state.modal === 'delete') renderDeleteModal();
   if(state.modal === 'login') renderLoginModal();
+  if(state.modal === 'export') renderExportModal();
 }
 
 function renderHeader(){
@@ -495,7 +534,7 @@ function renderHeader(){
     <div class="brand">
       <div class="brand-mark">${ICON.heart.replace('currentColor','#fff')}</div>
       <div>
-        <h1>Quản lý Bệnh nhân</h1>
+        <h1>Quản lý Bệnh mạn tính</h1>
         <div class="brand-sub">Tâm thần · Huyết áp · Tiểu đường</div>
       </div>
     </div>
@@ -512,47 +551,42 @@ function renderHeader(){
 }
 
 function renderAlerts(c){
-  let html = '';
-  if(c.over > 0){
-    html += `<div class="alert over">${ICON.warn}<span>Có <b>${c.over}</b> bệnh nhân đã <b>quá hạn tái khám</b> — cần liên hệ ngay.</span>
-      <button class="link" data-quickfilter="over">Xem</button></div>`;
-  }
-  if(c.due > 0){
-    html += `<div class="alert due">${ICON.clock}<span>Có <b>${c.due}</b> bệnh nhân <b>đến hẹn tái khám hôm nay</b>.</span>
-      <button class="link" data-quickfilter="due">Xem</button></div>`;
-  }
-  if(c.soon > 0){
-    html += `<div class="alert soon">${ICON.clock}<span>Có <b>${c.soon}</b> bệnh nhân sẽ <b>đến hẹn tái khám vào ngày mai</b> — nhắc lịch trước.</span>
-      <button class="link" data-quickfilter="soon">Xem</button></div>`;
-  }
-  if(!html) return '';
-  return `<div class="alerts">${html}</div>`;
+  const chips = [];
+  if(c.over > 0) chips.push(`<button class="alert-chip over" data-quickfilter="over">${c.over} quá hạn</button>`);
+  if(c.due > 0) chips.push(`<button class="alert-chip due" data-quickfilter="due">${c.due} hẹn hôm nay</button>`);
+  if(c.soon > 0) chips.push(`<button class="alert-chip soon" data-quickfilter="soon">${c.soon} hẹn ngày mai</button>`);
+  if(!chips.length) return '';
+  return `<div class="alert-bar"><span class="alert-bar-label">${ICON.warn}Cần chú ý:</span>${chips.join('')}</div>`;
+}
+
+function renderStatusBanner(){
+  if(!state.importStatus) return '';
+  return `<div class="status-banner"><span>${escapeHtml(state.importStatus)}</span><button id="dismiss-status">Đóng</button></div>`;
 }
 
 function renderStats(c){
   return `
   <div class="stats">
-    <div class="stat">
+    <button class="stat" data-quickfilter="all" data-resetall="1" title="Xem tất cả">
       <div class="num">${c.total}</div>
       <div class="lbl">Tổng bệnh nhân</div>
       <div class="sub">${c.mental} tâm thần · ${c.bp} huyết áp · ${c.dm} tiểu đường</div>
-    </div>
-    <div class="stat accent-ok"><div class="num">${c.ontrack}</div><div class="lbl">Đang uống thuốc</div></div>
-    <div class="stat accent-warn"><div class="num">${c.soon + c.due}</div><div class="lbl">Cần nhắc lịch<div class="sub">${c.soon} ngày mai · ${c.due} hôm nay</div></div></div>
-    <div class="stat accent-danger"><div class="num">${c.over}</div><div class="lbl">Quá hạn tái khám</div></div>
+    </button>
+    <button class="stat accent-ok" data-quickfilter="ontrack" title="Xem danh sách đang uống thuốc"><div class="num">${c.ontrack}</div><div class="lbl">Đang uống thuốc</div></button>
+    <button class="stat accent-warn" data-quickfilter="upcoming" title="Xem danh sách cần nhắc lịch"><div class="num">${c.soon + c.due}</div><div class="lbl">Cần nhắc lịch<div class="sub">${c.soon} ngày mai · ${c.due} hôm nay</div></div></button>
+    <button class="stat accent-danger" data-quickfilter="over" title="Xem danh sách quá hạn"><div class="num">${c.over}</div><div class="lbl">Quá hạn tái khám</div></button>
   </div>`;
 }
 
 function renderToolbar(){
   const catOptions = [['all','Tất cả loại'],['mental','Tâm thần'],['bp','Huyết áp'],['dm','Tiểu đường']];
-  const statusOptions = [['ontrack','Đang uống thuốc'],['soon','Sắp đến hẹn (mai)'],['due','Đến hẹn hôm nay'],['over','Quá hạn'],['all','Tất cả trạng thái']];
+  const statusOptions = [['ontrack','Đang uống thuốc'],['upcoming','Cần nhắc lịch'],['soon','Sắp đến hẹn (mai)'],['due','Đến hẹn hôm nay'],['over','Quá hạn'],['all','Tất cả trạng thái']];
   const nhaList = distinctNha();
-  const nhaSuffix = state.nha === 'all' ? '' : ` — ${escapeHtml(state.nha)}`;
   return `
   <div class="toolbar">
     <div class="search">
       ${ICON.search}
-      <input type="text" id="search-input" placeholder="Tìm theo họ tên..." value="${escapeAttr(state.search)}">
+      <input type="text" id="search-input" placeholder="Tìm theo tên, nhà, khu, ngày khám..." value="${escapeAttr(state.search)}">
     </div>
     <div class="filters-row">
       <select class="select-filter" id="cat-select">
@@ -568,14 +602,9 @@ function renderToolbar(){
     </div>
     <div class="spacer"></div>
     <div class="actions-row">
-      <div class="menu-wrap">
-        <button class="btn sm" id="export-toggle">${ICON.download} Xuất Excel</button>
-        <div class="menu" id="export-menu" ${state.exportMenuOpen ? '' : 'hidden'}>
-          <div class="menu-note">${state.nha === 'all' ? 'Xuất tất cả các nhà' : `Chỉ xuất: ${escapeHtml(state.nha)}`}</div>
-          <button id="export-mental">Danh sách Tâm thần${nhaSuffix}</button>
-          <button id="export-bpdm">Huyết áp + Tiểu đường${nhaSuffix}</button>
-        </div>
-      </div>
+      <button class="btn sm" id="export-toggle">${ICON.download} Xuất Excel</button>
+      ${state.isAdmin ? `<button class="btn sm" id="import-toggle">${ICON.plus} Nhập Excel</button>` : ''}
+      <input type="file" id="import-file-input" accept=".xlsx,.xls,.csv" hidden>
       ${state.isAdmin ? `<button class="btn primary" id="btn-add">${ICON.plus} Thêm bệnh nhân</button>` : ''}
     </div>
   </div>`;
@@ -591,7 +620,7 @@ function renderTable(list){
     return `<div class="empty">Đang tải dữ liệu...</div>`;
   }
   if(dbError){
-    return `<div class="empty">${ICON.warn}<b>Lỗi kết nối dữ liệu</b>${escapeHtml(dbError)}</div>`;
+    return `<div class="empty">${ICON.warn}<b>Lỗi kết nối dữ liệu</b>${escapeHtml(dbError)}<div style="margin-top:12px;"><button class="btn sm" id="retry-db">Thử kết nối lại</button></div></div>`;
   }
   if(list.length === 0){
     return `<div class="empty">${ICON.inbox}<b>Không có bệnh nhân nào</b>Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.</div>`;
@@ -605,7 +634,7 @@ function renderTable(list){
       <td class="name" data-label="Họ và tên">${escapeHtml(p.hoTen||'')}</td>
       <td data-label="Năm sinh">${escapeHtml(p.namSinh||'')}</td>
       <td data-label="Giới tính">${escapeHtml(p.gioiTinh||'')}</td>
-      <td data-label="Loại"><span class="badge ${categoryBadgeClass(p.loai)}">${categoryLabel(p.loai)}</span></td>
+      <td data-label="Loại"><span class="badge-group">${loaiArray(p).map(c=>`<span class="badge ${categoryBadgeClass(c)}">${categoryLabel(c)}</span>`).join('')}</span></td>
       <td data-label="Chẩn đoán">${escapeHtml(p.chanDoan||'')}</td>
       <td data-label="Thuốc">${escapeHtml(p.thuoc||'')}</td>
       <td data-label="Nhà">${escapeHtml(p.nha||'')}</td>
@@ -678,8 +707,9 @@ function renderLoginModal(){
 }
 
 function renderFormModal(){
-  const p = state.editing || { loai:'bp', gioiTinh:'Nữ' };
+  const p = state.editing || { loai:['bp'], gioiTinh:'Nữ' };
   const isEdit = !!(state.editing && state.editing.id);
+  let selectedLoai = loaiArray(p).slice();
   const wrap = el(`<div class="overlay" id="overlay"></div>`);
   wrap.appendChild(el(`
     <div class="modal">
@@ -703,11 +733,12 @@ function renderFormModal(){
           </div>
           <div class="field full">
             <label>Loại bệnh (dùng để xuất file)</label>
-            <div class="seg" id="f-loai-seg" data-value="${p.loai||'bp'}">
-              <button type="button" data-v="mental" class="${p.loai==='mental'?'on':''}">Tâm thần</button>
-              <button type="button" data-v="bp" class="${(p.loai==='bp'||!p.loai)?'on':''}">Huyết áp</button>
-              <button type="button" data-v="dm" class="${p.loai==='dm'?'on':''}">Tiểu đường</button>
+            <div class="chip-group" id="f-loai-group">
+              <button type="button" data-v="mental" class="chip ${selectedLoai.includes('mental')?'on':''}">Tâm thần</button>
+              <button type="button" data-v="bp" class="chip ${selectedLoai.includes('bp')?'on':''}">Huyết áp</button>
+              <button type="button" data-v="dm" class="chip ${selectedLoai.includes('dm')?'on':''}">Tiểu đường</button>
             </div>
+            <div class="chip-hint">Có thể chọn nhiều loại nếu bệnh nhân mắc đồng thời (ví dụ vừa Tâm thần vừa Huyết áp).</div>
           </div>
           <div class="field full">
             <label>Chẩn đoán</label>
@@ -740,12 +771,13 @@ function renderFormModal(){
   `));
   document.body.appendChild(wrap);
 
-  const seg = wrap.querySelector('#f-loai-seg');
-  seg.querySelectorAll('button').forEach(b=>{
+  const chipGroup = wrap.querySelector('#f-loai-group');
+  chipGroup.querySelectorAll('button').forEach(b=>{
     b.addEventListener('click', ()=>{
-      seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
-      b.classList.add('on');
-      seg.dataset.value = b.dataset.v;
+      const v = b.dataset.v;
+      const idx = selectedLoai.indexOf(v);
+      if(idx >= 0){ selectedLoai.splice(idx,1); b.classList.remove('on'); }
+      else { selectedLoai.push(v); b.classList.add('on'); }
     });
   });
 
@@ -759,11 +791,15 @@ function renderFormModal(){
       wrap.querySelector('#form-err').textContent = 'Vui lòng nhập họ và tên.';
       return;
     }
+    if(selectedLoai.length === 0){
+      wrap.querySelector('#form-err').textContent = 'Vui lòng chọn ít nhất 1 loại bệnh.';
+      return;
+    }
     const data = {
       hoTen,
       namSinh: wrap.querySelector('#f-namSinh').value.trim(),
       gioiTinh: wrap.querySelector('#f-gioiTinh').value,
-      loai: seg.dataset.value,
+      loai: selectedLoai.slice(),
       chanDoan: wrap.querySelector('#f-chanDoan').value.trim(),
       thuoc: wrap.querySelector('#f-thuoc').value.trim(),
       nha: wrap.querySelector('#f-nha').value.trim(),
@@ -781,6 +817,79 @@ function renderFormModal(){
       btn.disabled = false; btn.textContent = isEdit ? 'Lưu thay đổi' : 'Thêm bệnh nhân';
     }
   });
+}
+
+function renderExportModal(){
+  const nhaList = distinctNha();
+  let localNha = state.nha;
+  const wrap = el(`<div class="overlay" id="overlay"></div>`);
+  wrap.appendChild(el(`
+    <div class="modal modal-sm">
+      <div class="modal-head"><h3>Xuất báo cáo Excel</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Chọn Nhà để xuất</label>
+          <select id="export-nha-select">
+            <option value="all" ${localNha==='all'?'selected':''}>Tất cả các nhà</option>
+            ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${localNha===n?'selected':''}>${escapeHtml(n)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="export-options">
+          <button class="export-opt" id="export-mental">
+            <span class="badge mental">Tâm thần</span>
+            <span class="opt-desc">Xuất riêng danh sách Tâm thần (.xlsx)</span>
+          </button>
+          <button class="export-opt" id="export-bpdm">
+            <span class="badge bp">Huyết áp + Tiểu đường</span>
+            <span class="opt-desc">Xuất gộp chung 1 file (.xlsx)</span>
+          </button>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="modal-cancel">Đóng</button>
+      </div>
+    </div>
+  `));
+  document.body.appendChild(wrap);
+  const nhaSelect = wrap.querySelector('#export-nha-select');
+  nhaSelect.addEventListener('change', ()=>{ localNha = nhaSelect.value; });
+  wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
+  wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
+  wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
+  wrap.querySelector('#export-mental').addEventListener('click', ()=>{ exportGroup('mental', nhaSelect.value); closeModal(); });
+  wrap.querySelector('#export-bpdm').addEventListener('click', ()=>{ exportGroup('bpdm', nhaSelect.value); closeModal(); });
+}
+
+async function importFromFile(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, {type:'array'});
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+  let ok = 0, fail = 0;
+  for(const r of rows){
+    const hoTen = String(r['Họ và tên'] || r['Ho ten'] || r['Họ tên'] || '').trim();
+    if(!hoTen){ fail++; continue; }
+    const loaiRaw = String(r['Loại'] || r['Loai'] || '').trim().toLowerCase();
+    let loai = [];
+    if(loaiRaw.includes('tâm thần') || loaiRaw.includes('tam than')) loai.push('mental');
+    if(loaiRaw.includes('huyết áp') || loaiRaw.includes('huyet ap')) loai.push('bp');
+    if(loaiRaw.includes('tiểu đường') || loaiRaw.includes('tieu duong') || loaiRaw.includes('đái tháo') || loaiRaw.includes('dai thao')) loai.push('dm');
+    if(!loai.length) loai = ['bp'];
+    const data = {
+      hoTen,
+      namSinh: String(r['Năm sinh'] || r['Nam sinh'] || '').trim(),
+      gioiTinh: String(r['Giới tính'] || r['Gioi tinh'] || '').trim() || 'Nữ',
+      loai,
+      chanDoan: String(r['Chẩn đoán'] || r['Chan doan'] || '').trim(),
+      thuoc: String(r['Thuốc'] || r['Thuoc'] || '').trim(),
+      nha: String(r['Nhà'] || r['Nha'] || r['Khu'] || '').trim(),
+      ngayKham: parseAnyDate(r['Ngày khám'] || r['Ngay kham']),
+      ngayTaiKham: parseAnyDate(r['Ngày tái khám'] || r['Ngay tai kham']),
+    };
+    try{ await savePatient(data, null); ok++; }
+    catch(e){ console.error('import row failed', e); fail++; }
+  }
+  return { ok, fail, total: rows.length };
 }
 
 function renderDeleteModal(){
@@ -837,13 +946,35 @@ function wireEvents(){
   document.getElementById('cat-select')?.addEventListener('change', (e)=>{ state.category = e.target.value; render(); });
   document.getElementById('status-select')?.addEventListener('change', (e)=>{ state.status = e.target.value; render(); });
   document.getElementById('nha-select')?.addEventListener('change', (e)=>{ state.nha = e.target.value; render(); });
-  document.querySelectorAll('[data-quickfilter]').forEach(b=> b.addEventListener('click', ()=>{ state.status = b.dataset.quickfilter; window.scrollTo({top: 0, behavior:'smooth'}); render(); }));
+  document.querySelectorAll('[data-quickfilter]').forEach(b=> b.addEventListener('click', ()=>{
+    if(b.dataset.resetall){ state.category='all'; state.nha='all'; state.search=''; }
+    state.status = b.dataset.quickfilter;
+    window.scrollTo({top: 0, behavior:'smooth'});
+    render();
+  }));
 
-  document.getElementById('export-toggle')?.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    state.exportMenuOpen = !state.exportMenuOpen;
+  document.getElementById('export-toggle')?.addEventListener('click', ()=>{ state.modal='export'; render(); });
+
+  document.getElementById('import-toggle')?.addEventListener('click', ()=>{
+    document.getElementById('import-file-input')?.click();
+  });
+  document.getElementById('import-file-input')?.addEventListener('change', async (e)=>{
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    state.importStatus = 'Đang nhập dữ liệu từ file, vui lòng đợi...';
+    render();
+    try{
+      const result = await importFromFile(file);
+      state.importStatus = `Đã nhập ${result.ok}/${result.total} bệnh nhân thành công` + (result.fail ? `, ${result.fail} dòng bị bỏ qua (thiếu họ tên hoặc lỗi).` : '.');
+    }catch(err){
+      console.error('import failed', err);
+      state.importStatus = 'Nhập file thất bại. Kiểm tra lại định dạng file Excel/CSV.';
+    }
     render();
   });
+  document.getElementById('dismiss-status')?.addEventListener('click', ()=>{ state.importStatus=''; render(); });
+
+  document.getElementById('retry-db')?.addEventListener('click', ()=>{ dbReady=false; dbError=null; render(); initDb(); });
 
   const searchInput = document.getElementById('search-input');
   if(searchInput){
@@ -852,9 +983,6 @@ function wireEvents(){
     searchInput.focus();
     const val = searchInput.value; searchInput.value=''; searchInput.value = val;
   }
-
-  document.getElementById('export-mental')?.addEventListener('click', ()=>{ state.exportMenuOpen=false; exportGroup('mental'); });
-  document.getElementById('export-bpdm')?.addEventListener('click', ()=>{ state.exportMenuOpen=false; exportGroup('bpdm'); });
 
   document.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=>{
     const p = patients.find(x=>x.id===b.dataset.id);
@@ -873,12 +1001,6 @@ function escapeHtml(s){
 function escapeAttr(s){ return escapeHtml(s); }
 
 /* ============================= BOOT ============================= */
-document.addEventListener('click', (e)=>{
-  if(state.exportMenuOpen && !e.target.closest('.menu-wrap')){
-    state.exportMenuOpen = false;
-    render();
-  }
-});
 render();
 initDb();
 </script>
