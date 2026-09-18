@@ -1,1 +1,0 @@
-# QL-BENH-MAN-TINH

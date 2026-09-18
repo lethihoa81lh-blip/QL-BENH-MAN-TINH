@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quản lý Bệnh nhân — Tâm thần &amp; Huyết áp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+  // ===== Firebase setup =====
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+  import {
+    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot
+  } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
+  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAzORIi4PXbYT993dGO_37DUR0xG2qlR-U",
+    authDomain: "ql-benh-man-tinh.firebaseapp.com",
+    projectId: "ql-benh-man-tinh",
+    storageBucket: "ql-benh-man-tinh.firebasestorage.app",
+    messagingSenderId: "1036151855833",
+    appId: "1:1036151855833:web:078488cc0b07cf1e253cc8"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const fbDb = getFirestore(fbApp);
+  const fbAuth = getAuth(fbApp);
+
+  // Expose a small bridge so the classic (non-module) app script below can use Firestore.
+  window.__fb = {
+    ready: new Promise((resolve) => {
+      onAuthStateChanged(fbAuth, (user) => {
+        if (user) resolve();
+      });
+      signInAnonymously(fbAuth).catch((err) => {
+        console.error("Firebase anonymous sign-in failed:", err);
+        // Resolve anyway so the app can render an error state instead of hanging.
+        resolve();
+      });
+    }),
+    collection: () => collection(fbDb, "patients"),
+    doc: (id) => doc(fbDb, "patients", id),
+    addDoc, updateDoc, deleteDoc, onSnapshot,
+  };
+</script>
+<style>
+  :root{
+    --bg:#F3F6F5;
+    --surface:#FFFFFF;
+    --ink:#152625;
+    --muted:#5B6E6B;
+    --muted-2:#8A9B98;
+    --border:#DEE6E4;
+    --primary:#0E7C66;
+    --primary-dark:#095F4E;
+    --primary-tint:#E4F3EF;
+    --mental:#6A4C93;
+    --mental-tint:#F0EAF6;
+    --bp:#1D6F8C;
+    --bp-tint:#E6F1F5;
+    --warn:#B7791F;
+    --warn-tint:#FCF1DE;
+    --danger:#C0392B;
+    --danger-tint:#FBE8E5;
+    --ok:#2F9E68;
+    --shadow: 0 1px 2px rgba(21,38,37,0.06), 0 4px 14px rgba(21,38,37,0.05);
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#101817; --surface:#16211F; --ink:#EAF2F0; --muted:#9FB3AF; --muted-2:#71827E;
+      --border:#233330; --primary:#3FBF9D; --primary-dark:#59D6B4; --primary-tint:#173A32;
+      --mental:#B79EE0; --mental-tint:#2A2138; --bp:#7FC4DE; --bp-tint:#152C34;
+      --warn:#E3B15C; --warn-tint:#3A2E11; --danger:#E8776A; --danger-tint:#3A1913; --ok:#5FD196;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#101817; --surface:#16211F; --ink:#EAF2F0; --muted:#9FB3AF; --muted-2:#71827E;
+    --border:#233330; --primary:#3FBF9D; --primary-dark:#59D6B4; --primary-tint:#173A32;
+    --mental:#B79EE0; --mental-tint:#2A2138; --bp:#7FC4DE; --bp-tint:#152C34;
+    --warn:#E3B15C; --warn-tint:#3A2E11; --danger:#E8776A; --danger-tint:#3A1913; --ok:#5FD196;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+  body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;font-size:14px;line-height:1.5;}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 56px;}
+
+  /* Header */
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{width:42px;height:42px;border-radius:11px;background:linear-gradient(155deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow);}
+  .brand-mark svg{width:22px;height:22px;}
+  h1{font-family:'Source Serif 4',serif;font-weight:600;font-size:22px;margin:0;letter-spacing:-0.01em;}
+  .brand-sub{color:var(--muted);font-size:12.5px;margin-top:1px;}
+  .auth-box{display:flex;align-items:center;gap:10px;}
+  .role-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:6px 14px 6px 10px;font-size:13px;font-weight:500;box-shadow:var(--shadow);}
+  .role-dot{width:8px;height:8px;border-radius:50%;background:var(--muted-2);}
+  .role-pill.admin .role-dot{background:var(--primary);}
+  button{font-family:inherit;cursor:pointer;}
+  .btn{border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:8px;font-size:13.5px;font-weight:500;transition:.12s ease;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+  .btn:hover{border-color:var(--primary);color:var(--primary-dark);}
+  .btn:active{transform:translateY(1px);}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .btn.primary:hover{background:var(--primary-dark);border-color:var(--primary-dark);color:#fff;}
+  .btn.ghost{border-color:transparent;background:transparent;}
+  .btn.ghost:hover{background:var(--primary-tint);}
+  .btn.danger-txt{color:var(--danger);}
+  .btn.danger-txt:hover{background:var(--danger-tint);border-color:var(--danger);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px;}
+  .btn svg{width:14px;height:14px;flex-shrink:0;}
+
+  /* Alerts */
+  .alerts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px;}
+  .alert{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:9px;font-size:13.5px;font-weight:500;border:1px solid transparent;}
+  .alert svg{width:17px;height:17px;flex-shrink:0;}
+  .alert.due{background:var(--warn-tint);color:var(--warn);border-color:color-mix(in srgb, var(--warn) 30%, transparent);}
+  .alert.over{background:var(--danger-tint);color:var(--danger);border-color:color-mix(in srgb, var(--danger) 30%, transparent);}
+  .alert.soon{background:var(--primary-tint);color:var(--primary-dark);border-color:color-mix(in srgb, var(--primary) 30%, transparent);}
+  .alert b{font-weight:700;}
+  .alert .link{margin-left:auto;background:none;border:none;color:inherit;font-weight:700;text-decoration:underline;font-size:12.5px;padding:2px 4px;}
+
+  /* Stat cards */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);}
+  .stat .num{font-size:26px;font-weight:800;font-family:'Source Serif 4',serif;line-height:1;}
+  .stat .lbl{color:var(--muted);font-size:12.5px;margin-top:6px;font-weight:500;}
+  .stat .sub{color:var(--muted-2);font-size:11px;margin-top:4px;font-weight:500;}
+  .stat.accent-mental .num{color:var(--mental);}
+  .stat.accent-bp .num{color:var(--bp);}
+  .stat.accent-ok .num{color:var(--ok);}
+  .stat.accent-warn .num{color:var(--warn);}
+  .stat.accent-danger .num{color:var(--danger);}
+
+  /* Toolbar */
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);}
+  .search{position:relative;flex:1;min-width:180px;max-width:280px;}
+  .search input{width:100%;padding:8px 10px 8px 32px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-size:13.5px;}
+  .search input:focus{outline:2px solid var(--primary);outline-offset:-1px;}
+  .search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted-2);}
+  .spacer{flex:1;}
+  .filters-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .filters-row select{flex:1;min-width:130px;}
+  .actions-row{display:flex;gap:8px;align-items:center;}
+  .menu-note{padding:6px 10px 8px;font-size:11.5px;color:var(--muted-2);border-bottom:1px solid var(--border);margin-bottom:2px;}
+  .select-filter{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;}
+  .select-filter:focus{outline:2px solid var(--primary);outline-offset:-1px;}
+  .menu-wrap{position:relative;}
+  .menu{position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 12px 28px rgba(0,0,0,0.14);padding:6px;display:flex;flex-direction:column;gap:2px;min-width:210px;z-index:20;}
+  .menu button{text-align:left;padding:9px 10px;border:none;background:transparent;border-radius:7px;font-size:13px;color:var(--ink);font-weight:500;}
+  .menu button:hover{background:var(--bg);}
+
+  /* Table */
+  .tbl-scroll{overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:920px;}
+  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:11px 14px;border-bottom:1px solid var(--border);background:var(--bg);white-space:nowrap;}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:13.5px;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--primary-tint);}
+  td.name{font-weight:600;}
+  td.stt{color:var(--muted-2);font-variant-numeric:tabular-nums;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;}
+  .badge.mental{background:var(--mental-tint);color:var(--mental);}
+  .badge.bp{background:var(--bp-tint);color:var(--bp);}
+  .badge.dm{background:#FDF0E5;color:#B5591E;}
+  :root[data-theme="dark"] .badge.dm, @media (prefers-color-scheme:dark){ .badge.dm{background:#3A2712;color:#E3944F;} }
+  .status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;}
+  .status .dot{width:7px;height:7px;border-radius:50%;}
+  .status.ok{color:var(--ok);} .status.ok .dot{background:var(--ok);}
+  .status.soon{color:var(--primary);} .status.soon .dot{background:var(--primary);}
+  .status.due{color:var(--warn);} .status.due .dot{background:var(--warn);}
+  .status.over{color:var(--danger);} .status.over .dot{background:var(--danger);}
+  .row-actions{display:flex;gap:4px;justify-content:flex-end;}
+  .icon-btn{border:1px solid transparent;background:transparent;padding:6px;border-radius:7px;color:var(--muted);display:inline-flex;}
+  .icon-btn:hover{background:var(--bg);color:var(--ink);}
+  .icon-btn.del:hover{background:var(--danger-tint);color:var(--danger);}
+  .icon-btn svg{width:15px;height:15px;}
+  .empty{padding:56px 20px;text-align:center;color:var(--muted);}
+  .empty svg{width:38px;height:38px;color:var(--muted-2);margin-bottom:10px;}
+  .empty b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:4px;}
+  .foot-note{padding:10px 16px;color:var(--muted-2);font-size:12px;border-top:1px solid var(--border);}
+  .view-hint{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);}
+  .view-hint svg{width:15px;height:15px;flex-shrink:0;color:var(--muted-2);}
+  .view-hint .link{background:none;border:none;color:var(--primary-dark);font-weight:700;text-decoration:underline;font-size:13px;padding:0;}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(15,25,24,0.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
+  .modal-sm{max-width:400px;}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border);}
+  .modal-head h3{margin:0;font-size:16px;font-family:'Source Serif 4',serif;font-weight:600;}
+  .modal-body{padding:20px;}
+  .modal-foot{padding:16px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+  .close-x{border:none;background:transparent;color:var(--muted);padding:4px;border-radius:6px;}
+  .close-x:hover{background:var(--bg);color:var(--ink);}
+  .close-x svg{width:18px;height:18px;}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:12.5px;font-weight:600;color:var(--muted);}
+  .field input, .field select{padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-size:13.5px;font-family:inherit;}
+  .field input:focus, .field select:focus{outline:2px solid var(--primary);outline-offset:-1px;}
+  .radio-row{display:flex;gap:14px;padding-top:2px;}
+  .radio-row label{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink);}
+  .seg{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .seg button{flex:1;padding:9px 6px;border:none;background:var(--bg);color:var(--muted);font-size:13px;font-weight:600;border-right:1px solid var(--border);}
+  .seg button:last-child{border-right:none;}
+  .seg button.on{background:var(--primary);color:#fff;}
+  .pw-row{display:flex;gap:8px;}
+  .pw-row input{flex:1;}
+  .err-txt{color:var(--danger);font-size:12.5px;min-height:16px;}
+  .lock-note{display:flex;gap:8px;color:var(--muted);font-size:12.5px;background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:14px;}
+  .lock-note svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;}
+
+  @media (max-width:640px){
+    .wrap{padding:14px 12px 40px;}
+    header.top{gap:10px;}
+    .stats{grid-template-columns:1fr 1fr;}
+    .toolbar{flex-direction:column;align-items:stretch;}
+    .search{max-width:none;}
+    .filters-row select{flex:1;min-width:0;}
+    .actions-row{width:100%;}
+    .actions-row .menu-wrap{flex:1;}
+    .actions-row .menu-wrap #export-toggle{width:100%;justify-content:center;}
+    .actions-row #btn-add{flex:1;justify-content:center;}
+    .menu{left:0;right:0;min-width:0;}
+    .form-grid{grid-template-columns:1fr;}
+    thead{display:none;}
+    .tbl-scroll{overflow-x:visible;padding:12px;}
+    table, tbody, tr, td{display:block;width:100%;}
+    tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;}
+    tbody tr:last-child{margin-bottom:0;}
+    tbody tr:hover{background:var(--surface);}
+    tbody td{border:none;padding:4px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+    tbody td::before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0;}
+    tbody td[data-label="STT"]{display:none;}
+    td.name{font-size:15px;}
+    .row-actions{justify-content:flex-end;padding-top:8px;margin-top:6px;border-top:1px solid var(--border);gap:6px;width:100%;}
+    .icon-btn{padding:9px 12px;border:1px solid var(--border);border-radius:8px;}
+    .icon-btn svg{width:16px;height:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+
+<script type="module">
+/* ============================= ICONS ============================= */
+const ICON = {
+  heart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8Z"/></svg>',
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>',
+  plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>',
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  unlock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>',
+  download:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>',
+  inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>',
+};
+
+/* ============================= STATE ============================= */
+const ADMIN_PASSWORD = "123456";
+let patients = [];
+let dbReady = false;
+let dbHandle = null;
+let unsub = null;
+
+let state = {
+  isAdmin: (localStorage.getItem('cms_isAdmin') === '1'),
+  category: 'all',      // all | mental | bp | dm
+  nha: 'all',            // 'all' or a specific nha value
+  status: 'ontrack',     // all | ontrack | soon | due | over
+  search: '',
+  modal: null,           // 'form' | 'delete' | 'login'
+  editing: null,         // patient object being edited, or null for new
+  deleteTarget: null,
+  formError: '',
+  loginError: '',
+  exportMenuOpen: false,
+};
+
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function parseDate(s){
+  if(!s) return null;
+  const [y,m,d] = s.split('-').map(Number);
+  if(!y||!m||!d) return null;
+  return new Date(y, m-1, d);
+}
+function fmtDate(s){
+  const d = parseDate(s);
+  if(!d) return '—';
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+function computeStatus(p){
+  const t = parseDate(todayStr());
+  const r = parseDate(p.ngayTaiKham);
+  if(!r) return 'active';
+  const diffDays = Math.round((r.getTime() - t.getTime()) / 86400000);
+  if(diffDays < 0) return 'over';
+  if(diffDays === 0) return 'due';
+  if(diffDays === 1) return 'soon';
+  return 'active';
+}
+function categoryLabel(c){
+  return c === 'mental' ? 'Tâm thần' : c === 'dm' ? 'Tiểu đường' : 'Huyết áp';
+}
+function categoryBadgeClass(c){
+  return c === 'mental' ? 'mental' : c === 'dm' ? 'dm' : 'bp';
+}
+
+/* ============================= DB WIRING (Firebase Firestore) ============================= */
+let dbError = null;
+
+async function initDb(){
+  try{
+    await window.__fb.ready;
+    const col = window.__fb.collection();
+    window.__fb.onSnapshot(col, (snap)=>{
+      patients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      dbReady = true;
+      dbError = null;
+      render();
+    }, (err)=>{
+      console.error('Firestore error', err);
+      dbError = 'Không thể kết nối tới Firestore. Kiểm tra lại quy tắc bảo mật (Rules) và cấu hình Firebase.';
+      dbReady = true;
+      render();
+    });
+  }catch(e){
+    console.error('Firebase init failed', e);
+    dbError = 'Không thể kết nối Firebase.';
+    dbReady = true;
+    render();
+  }
+}
+
+async function savePatient(data, id){
+  if(id){
+    await window.__fb.updateDoc(window.__fb.doc(id), data);
+  }else{
+    await window.__fb.addDoc(window.__fb.collection(), data);
+  }
+}
+
+async function deletePatient(id){
+  await window.__fb.deleteDoc(window.__fb.doc(id));
+}
+
+/* ============================= DERIVED DATA ============================= */
+function distinctNha(){
+  const set = new Set(patients.map(p => (p.nha||'').trim()).filter(Boolean));
+  return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
+}
+
+function filteredPatients(){
+  const q = state.search.trim().toLowerCase();
+  return patients
+    .map(p => ({...p, _status: computeStatus(p)}))
+    .filter(p => state.category === 'all' ? true : p.loai === state.category)
+    .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha)
+    .filter(p => {
+      if(state.status === 'all') return true;
+      if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
+      if(state.status === 'soon') return p._status === 'soon';
+      if(state.status === 'due') return p._status === 'due';
+      if(state.status === 'over') return p._status === 'over';
+      return true;
+    })
+    .filter(p => q ? (p.hoTen||'').toLowerCase().includes(q) : true)
+    .sort((a,b) => {
+      const da = parseDate(a.ngayTaiKham), db_ = parseDate(b.ngayTaiKham);
+      if(!da && !db_) return 0;
+      if(!da) return 1;
+      if(!db_) return -1;
+      return da - db_;
+    });
+}
+
+function counts(){
+  const all = patients.map(p => ({...p, _status: computeStatus(p)}));
+  return {
+    total: all.length,
+    mental: all.filter(p=>p.loai==='mental').length,
+    bp: all.filter(p=>p.loai==='bp').length,
+    dm: all.filter(p=>p.loai==='dm').length,
+    bpdm: all.filter(p=>p.loai==='bp'||p.loai==='dm').length,
+    ontrack: all.filter(p=>p._status==='active').length,
+    soon: all.filter(p=>p._status==='soon').length,
+    due: all.filter(p=>p._status==='due').length,
+    over: all.filter(p=>p._status==='over').length,
+  };
+}
+
+/* ============================= EXPORT ============================= */
+function buildRows(list){
+  return list.map((p, idx) => ({
+    'STT': idx+1,
+    'Họ và tên': p.hoTen || '',
+    'Năm sinh': p.namSinh || '',
+    'Giới tính': p.gioiTinh || '',
+    'Chẩn đoán': p.chanDoan || '',
+    'Thuốc': p.thuoc || '',
+    'Nhà': p.nha || '',
+    'Ngày khám': fmtDate(p.ngayKham),
+    'Ngày tái khám': fmtDate(p.ngayTaiKham),
+    'Trạng thái': p._status === 'over' ? 'Quá hạn tái khám' : p._status === 'due' ? 'Đến hẹn hôm nay' : p._status === 'soon' ? 'Sắp đến hẹn (ngày mai)' : 'Đang uống thuốc',
+  }));
+}
+
+async function exportGroup(kind){
+  const all = patients.map(p => ({...p, _status: computeStatus(p)}))
+    .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha);
+  let list, filename, sheetName;
+  const nhaSlug = state.nha === 'all' ? '' : ('_' + state.nha.replace(/[^\p{L}\p{N}]+/gu, '-'));
+  if(kind === 'mental'){
+    list = all.filter(p => p.loai === 'mental');
+    filename = 'Danh_sach_Tam_than' + nhaSlug + '_' + todayStr() + '.xlsx';
+    sheetName = 'Tâm thần';
+  }else{
+    list = all.filter(p => p.loai === 'bp' || p.loai === 'dm');
+    filename = 'Danh_sach_Huyet_ap_Tieu_duong' + nhaSlug + '_' + todayStr() + '.xlsx';
+    sheetName = 'Huyet ap - Tieu duong';
+  }
+  list.sort((a,b)=> (a.hoTen||'').localeCompare(b.hoTen||'', 'vi'));
+  const rows = buildRows(list);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:26},{wch:22},{wch:14},{wch:12},{wch:13},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  const buf = XLSX.write(wb, {type:'array', bookType:'xlsx'});
+  const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+
+  try{
+    const downloads = window.claude?.use ? await claude.use("downloads") : null;
+    if(downloads){
+      await downloads.save({filename, data: blob});
+    }else{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+      a.remove(); URL.revokeObjectURL(url);
+    }
+  }catch(e){
+    if(e && e.code === 'declined') return;
+    console.error('export failed', e);
+    alert('Không thể xuất file. Vui lòng thử lại.');
+  }
+}
+
+/* ============================= RENDER ============================= */
+function el(html){
+  const t = document.createElement('template');
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+function render(){
+  const app = document.getElementById('app');
+  const c = counts();
+  const list = filteredPatients();
+
+  app.innerHTML = `
+    ${renderHeader()}
+    ${renderAlerts(c)}
+    ${renderStats(c)}
+    <div class="panel">
+      ${renderToolbar()}
+      ${renderViewOnlyHint()}
+      ${renderTable(list)}
+      <div class="foot-note">${list.length} bệnh nhân hiển thị • Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+  `;
+  wireEvents();
+  if(state.modal === 'form') renderFormModal();
+  if(state.modal === 'delete') renderDeleteModal();
+  if(state.modal === 'login') renderLoginModal();
+}
+
+function renderHeader(){
+  return `
+  <header class="top">
+    <div class="brand">
+      <div class="brand-mark">${ICON.heart.replace('currentColor','#fff')}</div>
+      <div>
+        <h1>Quản lý Bệnh nhân</h1>
+        <div class="brand-sub">Tâm thần · Huyết áp · Tiểu đường</div>
+      </div>
+    </div>
+    <div class="auth-box">
+      <div class="role-pill ${state.isAdmin ? 'admin':''}">
+        <span class="role-dot"></span>
+        ${state.isAdmin ? 'Quản trị viên' : 'Chế độ xem'}
+      </div>
+      ${state.isAdmin
+        ? `<button class="btn" id="btn-logout">${ICON.unlock} Đăng xuất</button>`
+        : `<button class="btn primary" id="btn-login">${ICON.lock} Đăng nhập Admin</button>`}
+    </div>
+  </header>`;
+}
+
+function renderAlerts(c){
+  let html = '';
+  if(c.over > 0){
+    html += `<div class="alert over">${ICON.warn}<span>Có <b>${c.over}</b> bệnh nhân đã <b>quá hạn tái khám</b> — cần liên hệ ngay.</span>
+      <button class="link" data-quickfilter="over">Xem</button></div>`;
+  }
+  if(c.due > 0){
+    html += `<div class="alert due">${ICON.clock}<span>Có <b>${c.due}</b> bệnh nhân <b>đến hẹn tái khám hôm nay</b>.</span>
+      <button class="link" data-quickfilter="due">Xem</button></div>`;
+  }
+  if(c.soon > 0){
+    html += `<div class="alert soon">${ICON.clock}<span>Có <b>${c.soon}</b> bệnh nhân sẽ <b>đến hẹn tái khám vào ngày mai</b> — nhắc lịch trước.</span>
+      <button class="link" data-quickfilter="soon">Xem</button></div>`;
+  }
+  if(!html) return '';
+  return `<div class="alerts">${html}</div>`;
+}
+
+function renderStats(c){
+  return `
+  <div class="stats">
+    <div class="stat">
+      <div class="num">${c.total}</div>
+      <div class="lbl">Tổng bệnh nhân</div>
+      <div class="sub">${c.mental} tâm thần · ${c.bp} huyết áp · ${c.dm} tiểu đường</div>
+    </div>
+    <div class="stat accent-ok"><div class="num">${c.ontrack}</div><div class="lbl">Đang uống thuốc</div></div>
+    <div class="stat accent-warn"><div class="num">${c.soon + c.due}</div><div class="lbl">Cần nhắc lịch<div class="sub">${c.soon} ngày mai · ${c.due} hôm nay</div></div></div>
+    <div class="stat accent-danger"><div class="num">${c.over}</div><div class="lbl">Quá hạn tái khám</div></div>
+  </div>`;
+}
+
+function renderToolbar(){
+  const catOptions = [['all','Tất cả loại'],['mental','Tâm thần'],['bp','Huyết áp'],['dm','Tiểu đường']];
+  const statusOptions = [['ontrack','Đang uống thuốc'],['soon','Sắp đến hẹn (mai)'],['due','Đến hẹn hôm nay'],['over','Quá hạn'],['all','Tất cả trạng thái']];
+  const nhaList = distinctNha();
+  const nhaSuffix = state.nha === 'all' ? '' : ` — ${escapeHtml(state.nha)}`;
+  return `
+  <div class="toolbar">
+    <div class="search">
+      ${ICON.search}
+      <input type="text" id="search-input" placeholder="Tìm theo họ tên..." value="${escapeAttr(state.search)}">
+    </div>
+    <div class="filters-row">
+      <select class="select-filter" id="cat-select">
+        ${catOptions.map(([k,l])=>`<option value="${k}" ${state.category===k?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <select class="select-filter" id="status-select">
+        ${statusOptions.map(([k,l])=>`<option value="${k}" ${state.status===k?'selected':''}>${l}</option>`).join('')}
+      </select>
+      <select class="select-filter" id="nha-select">
+        <option value="all" ${state.nha==='all'?'selected':''}>Tất cả nhà</option>
+        ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${state.nha===n?'selected':''}>${escapeHtml(n)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="spacer"></div>
+    <div class="actions-row">
+      <div class="menu-wrap">
+        <button class="btn sm" id="export-toggle">${ICON.download} Xuất Excel</button>
+        <div class="menu" id="export-menu" ${state.exportMenuOpen ? '' : 'hidden'}>
+          <div class="menu-note">${state.nha === 'all' ? 'Xuất tất cả các nhà' : `Chỉ xuất: ${escapeHtml(state.nha)}`}</div>
+          <button id="export-mental">Danh sách Tâm thần${nhaSuffix}</button>
+          <button id="export-bpdm">Huyết áp + Tiểu đường${nhaSuffix}</button>
+        </div>
+      </div>
+      ${state.isAdmin ? `<button class="btn primary" id="btn-add">${ICON.plus} Thêm bệnh nhân</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function renderViewOnlyHint(){
+  if(state.isAdmin) return '';
+  return `<div class="view-hint">${ICON.lock}<span>Bạn đang ở <b>chế độ xem</b>. <button class="link" id="hint-login">Đăng nhập Admin</button> để thêm, sửa hoặc xoá bệnh nhân.</span></div>`;
+}
+
+function renderTable(list){
+  if(!dbReady){
+    return `<div class="empty">Đang tải dữ liệu...</div>`;
+  }
+  if(dbError){
+    return `<div class="empty">${ICON.warn}<b>Lỗi kết nối dữ liệu</b>${escapeHtml(dbError)}</div>`;
+  }
+  if(list.length === 0){
+    return `<div class="empty">${ICON.inbox}<b>Không có bệnh nhân nào</b>Không tìm thấy dữ liệu phù hợp với bộ lọc hiện tại.</div>`;
+  }
+  const rows = list.map((p, idx) => {
+    const st = p._status;
+    const stLabel = st === 'over' ? 'Quá hạn' : st === 'due' ? 'Đến hẹn' : st === 'soon' ? 'Sắp đến hẹn' : 'Đang uống';
+    return `
+    <tr data-id="${p.id}">
+      <td class="stt" data-label="STT">${idx+1}</td>
+      <td class="name" data-label="Họ và tên">${escapeHtml(p.hoTen||'')}</td>
+      <td data-label="Năm sinh">${escapeHtml(p.namSinh||'')}</td>
+      <td data-label="Giới tính">${escapeHtml(p.gioiTinh||'')}</td>
+      <td data-label="Loại"><span class="badge ${categoryBadgeClass(p.loai)}">${categoryLabel(p.loai)}</span></td>
+      <td data-label="Chẩn đoán">${escapeHtml(p.chanDoan||'')}</td>
+      <td data-label="Thuốc">${escapeHtml(p.thuoc||'')}</td>
+      <td data-label="Nhà">${escapeHtml(p.nha||'')}</td>
+      <td data-label="Ngày khám">${fmtDate(p.ngayKham)}</td>
+      <td data-label="Ngày tái khám">${fmtDate(p.ngayTaiKham)}</td>
+      <td data-label="Trạng thái"><span class="status ${st}"><span class="dot"></span>${stLabel}</span></td>
+      <td data-label="Thao tác">
+        <div class="row-actions">
+          ${state.isAdmin ? `
+            <button class="icon-btn edit-btn" data-id="${p.id}" title="Sửa">${ICON.edit}</button>
+            <button class="icon-btn del" data-id="${p.id}" title="Xoá">${ICON.trash}</button>
+          ` : '—'}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr>
+        <th>STT</th><th>Họ và tên</th><th>Năm sinh</th><th>Giới tính</th><th>Loại</th>
+        <th>Chẩn đoán</th><th>Thuốc</th><th>Nhà</th><th>Ngày khám</th><th>Ngày tái khám</th><th>Trạng thái</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+/* ============================= MODALS ============================= */
+function renderLoginModal(){
+  const wrap = el(`<div class="overlay" id="overlay"></div>`);
+  wrap.appendChild(el(`
+    <div class="modal modal-sm">
+      <div class="modal-head"><h3>Đăng nhập Quản trị</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
+      <div class="modal-body">
+        <div class="field">
+          <label>Mật khẩu Admin</label>
+          <div class="pw-row">
+            <input type="password" id="pw-input" placeholder="Nhập mật khẩu" autofocus>
+          </div>
+        </div>
+        <div class="err-txt">${state.loginError || ''}</div>
+        <div class="lock-note">${ICON.info}<span>Quyền Admin cho phép thêm, sửa và xoá bệnh nhân. Người xem thường chỉ có thể xem và xuất báo cáo.</span></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="modal-cancel">Huỷ</button>
+        <button class="btn primary" id="pw-submit">Đăng nhập</button>
+      </div>
+    </div>
+  `));
+  document.body.appendChild(wrap);
+  const pwInput = wrap.querySelector('#pw-input');
+  const submit = () => {
+    if(pwInput.value === ADMIN_PASSWORD){
+      state.isAdmin = true;
+      localStorage.setItem('cms_isAdmin','1');
+      closeModal();
+    }else{
+      state.loginError = 'Mật khẩu không đúng. Vui lòng thử lại.';
+      closeModal(false);
+      render();
+    }
+  };
+  wrap.querySelector('#pw-submit').addEventListener('click', submit);
+  pwInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submit(); });
+  wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
+  wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
+  wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
+}
+
+function renderFormModal(){
+  const p = state.editing || { loai:'bp', gioiTinh:'Nữ' };
+  const isEdit = !!(state.editing && state.editing.id);
+  const wrap = el(`<div class="overlay" id="overlay"></div>`);
+  wrap.appendChild(el(`
+    <div class="modal">
+      <div class="modal-head"><h3>${isEdit ? 'Sửa thông tin bệnh nhân' : 'Thêm bệnh nhân mới'}</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
+      <div class="modal-body">
+        <div class="form-grid">
+          <div class="field full">
+            <label>Họ và tên *</label>
+            <input type="text" id="f-hoTen" value="${escapeAttr(p.hoTen||'')}" placeholder="Nguyễn Văn A">
+          </div>
+          <div class="field">
+            <label>Năm sinh</label>
+            <input type="text" id="f-namSinh" value="${escapeAttr(p.namSinh||'')}" placeholder="1955" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label>Giới tính</label>
+            <select id="f-gioiTinh">
+              <option value="Nam" ${p.gioiTinh==='Nam'?'selected':''}>Nam</option>
+              <option value="Nữ" ${p.gioiTinh==='Nữ'?'selected':''}>Nữ</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Loại bệnh (dùng để xuất file)</label>
+            <div class="seg" id="f-loai-seg" data-value="${p.loai||'bp'}">
+              <button type="button" data-v="mental" class="${p.loai==='mental'?'on':''}">Tâm thần</button>
+              <button type="button" data-v="bp" class="${(p.loai==='bp'||!p.loai)?'on':''}">Huyết áp</button>
+              <button type="button" data-v="dm" class="${p.loai==='dm'?'on':''}">Tiểu đường</button>
+            </div>
+          </div>
+          <div class="field full">
+            <label>Chẩn đoán</label>
+            <input type="text" id="f-chanDoan" value="${escapeAttr(p.chanDoan||'')}" placeholder="Tăng huyết áp độ II">
+          </div>
+          <div class="field full">
+            <label>Thuốc</label>
+            <input type="text" id="f-thuoc" value="${escapeAttr(p.thuoc||'')}" placeholder="Amlodipin 5mg">
+          </div>
+          <div class="field full">
+            <label>Nhà / Khu vực</label>
+            <input type="text" id="f-nha" value="${escapeAttr(p.nha||'')}" placeholder="Nhà 1 - Khu 1">
+          </div>
+          <div class="field">
+            <label>Ngày khám</label>
+            <input type="date" id="f-ngayKham" value="${p.ngayKham||''}">
+          </div>
+          <div class="field">
+            <label>Ngày tái khám</label>
+            <input type="date" id="f-ngayTaiKham" value="${p.ngayTaiKham||''}">
+          </div>
+        </div>
+        <div class="err-txt" id="form-err">${state.formError||''}</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="modal-cancel">Huỷ</button>
+        <button class="btn primary" id="form-submit">${isEdit ? 'Lưu thay đổi' : 'Thêm bệnh nhân'}</button>
+      </div>
+    </div>
+  `));
+  document.body.appendChild(wrap);
+
+  const seg = wrap.querySelector('#f-loai-seg');
+  seg.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      seg.querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      seg.dataset.value = b.dataset.v;
+    });
+  });
+
+  wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
+  wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
+  wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
+
+  wrap.querySelector('#form-submit').addEventListener('click', async ()=>{
+    const hoTen = wrap.querySelector('#f-hoTen').value.trim();
+    if(!hoTen){
+      wrap.querySelector('#form-err').textContent = 'Vui lòng nhập họ và tên.';
+      return;
+    }
+    const data = {
+      hoTen,
+      namSinh: wrap.querySelector('#f-namSinh').value.trim(),
+      gioiTinh: wrap.querySelector('#f-gioiTinh').value,
+      loai: seg.dataset.value,
+      chanDoan: wrap.querySelector('#f-chanDoan').value.trim(),
+      thuoc: wrap.querySelector('#f-thuoc').value.trim(),
+      nha: wrap.querySelector('#f-nha').value.trim(),
+      ngayKham: wrap.querySelector('#f-ngayKham').value,
+      ngayTaiKham: wrap.querySelector('#f-ngayTaiKham').value,
+    };
+    const btn = wrap.querySelector('#form-submit');
+    btn.disabled = true; btn.textContent = 'Đang lưu...';
+    try{
+      await savePatient(data, isEdit ? state.editing.id : null);
+      closeModal();
+    }catch(e){
+      console.error(e);
+      wrap.querySelector('#form-err').textContent = 'Lưu thất bại. Vui lòng thử lại.';
+      btn.disabled = false; btn.textContent = isEdit ? 'Lưu thay đổi' : 'Thêm bệnh nhân';
+    }
+  });
+}
+
+function renderDeleteModal(){
+  const p = state.deleteTarget;
+  const wrap = el(`<div class="overlay" id="overlay"></div>`);
+  wrap.appendChild(el(`
+    <div class="modal modal-sm">
+      <div class="modal-head"><h3>Xoá bệnh nhân</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
+      <div class="modal-body">
+        <p style="margin:0 0 4px;">Bạn có chắc muốn xoá hồ sơ của <b>${escapeHtml(p?.hoTen||'')}</b>?</p>
+        <p style="margin:0;color:var(--muted);font-size:12.5px;">Hành động này không thể hoàn tác.</p>
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="modal-cancel">Huỷ</button>
+        <button class="btn danger-txt" id="confirm-del" style="border-color:var(--danger);">Xoá</button>
+      </div>
+    </div>
+  `));
+  document.body.appendChild(wrap);
+  wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
+  wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
+  wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
+  wrap.querySelector('#confirm-del').addEventListener('click', async ()=>{
+    const btn = wrap.querySelector('#confirm-del');
+    btn.disabled = true; btn.textContent = 'Đang xoá...';
+    try{
+      await deletePatient(p.id);
+      closeModal();
+    }catch(e){
+      console.error(e);
+      closeModal();
+    }
+  });
+}
+
+function closeModal(clearError=true){
+  document.getElementById('overlay')?.remove();
+  state.modal = null;
+  state.editing = null;
+  state.deleteTarget = null;
+  if(clearError){ state.formError=''; state.loginError=''; }
+  render();
+}
+
+/* ============================= EVENTS ============================= */
+function wireEvents(){
+  document.getElementById('btn-login')?.addEventListener('click', ()=>{ state.loginError=''; state.modal='login'; render(); });
+  document.getElementById('hint-login')?.addEventListener('click', ()=>{ state.loginError=''; state.modal='login'; render(); });
+  document.getElementById('btn-logout')?.addEventListener('click', ()=>{
+    state.isAdmin = false; localStorage.removeItem('cms_isAdmin'); render();
+  });
+  document.getElementById('btn-add')?.addEventListener('click', ()=>{ state.editing=null; state.formError=''; state.modal='form'; render(); });
+
+  document.getElementById('cat-select')?.addEventListener('change', (e)=>{ state.category = e.target.value; render(); });
+  document.getElementById('status-select')?.addEventListener('change', (e)=>{ state.status = e.target.value; render(); });
+  document.getElementById('nha-select')?.addEventListener('change', (e)=>{ state.nha = e.target.value; render(); });
+  document.querySelectorAll('[data-quickfilter]').forEach(b=> b.addEventListener('click', ()=>{ state.status = b.dataset.quickfilter; window.scrollTo({top: 0, behavior:'smooth'}); render(); }));
+
+  document.getElementById('export-toggle')?.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    state.exportMenuOpen = !state.exportMenuOpen;
+    render();
+  });
+
+  const searchInput = document.getElementById('search-input');
+  if(searchInput){
+    searchInput.addEventListener('input', (e)=>{ state.search = e.target.value; render(); });
+    // restore focus/cursor after re-render
+    searchInput.focus();
+    const val = searchInput.value; searchInput.value=''; searchInput.value = val;
+  }
+
+  document.getElementById('export-mental')?.addEventListener('click', ()=>{ state.exportMenuOpen=false; exportGroup('mental'); });
+  document.getElementById('export-bpdm')?.addEventListener('click', ()=>{ state.exportMenuOpen=false; exportGroup('bpdm'); });
+
+  document.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=>{
+    const p = patients.find(x=>x.id===b.dataset.id);
+    state.editing = p; state.formError=''; state.modal='form'; render();
+  }));
+  document.querySelectorAll('.icon-btn.del').forEach(b=> b.addEventListener('click', ()=>{
+    const p = patients.find(x=>x.id===b.dataset.id);
+    state.deleteTarget = p; state.modal='delete'; render();
+  }));
+}
+
+/* ============================= UTIL ============================= */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+/* ============================= BOOT ============================= */
+document.addEventListener('click', (e)=>{
+  if(state.exportMenuOpen && !e.target.closest('.menu-wrap')){
+    state.exportMenuOpen = false;
+    render();
+  }
+});
+render();
+initDb();
+</script>
+</body>
+</html>
