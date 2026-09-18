@@ -279,6 +279,7 @@ let state = {
   isAdmin: (localStorage.getItem('cms_isAdmin') === '1'),
   category: 'all',      // all | mental | bp | dm
   nha: 'all',            // 'all' or a specific nha value
+  khu: 'all',            // 'all' or a specific khu value
   status: 'ontrack',     // all | ontrack | soon | due | over
   search: '',
   modal: null,           // 'form' | 'delete' | 'login'
@@ -393,12 +394,18 @@ function distinctNha(){
   return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
 }
 
+function distinctKhu(){
+  const set = new Set(patients.map(p => (p.khu||'').trim()).filter(Boolean));
+  return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
+}
+
 function filteredPatients(){
   const q = normalizeVN(state.search.trim());
   return patients
     .map(p => ({...p, _status: computeStatus(p)}))
     .filter(p => state.category === 'all' ? true : loaiArray(p).includes(state.category))
     .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha)
+    .filter(p => state.khu === 'all' ? true : (p.khu||'').trim() === state.khu)
     .filter(p => {
       if(state.status === 'all') return true;
       if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
@@ -410,7 +417,7 @@ function filteredPatients(){
     })
     .filter(p => {
       if(!q) return true;
-      const hay = normalizeVN(p.hoTen) + ' ' + normalizeVN(p.nha) + ' ' +
+      const hay = normalizeVN(p.hoTen) + ' ' + normalizeVN(p.nha) + ' ' + normalizeVN(p.khu) + ' ' +
         (p.ngayKham||'') + ' ' + fmtDate(p.ngayKham) + ' ' +
         (p.ngayTaiKham||'') + ' ' + fmtDate(p.ngayTaiKham);
       return hay.toLowerCase().includes(q);
@@ -450,31 +457,35 @@ function buildRows(list){
     'Chẩn đoán': p.chanDoan || '',
     'Thuốc': p.thuoc || '',
     'Nhà': p.nha || '',
+    'Khu': p.khu || '',
     'Ngày khám': fmtDate(p.ngayKham),
     'Ngày tái khám': fmtDate(p.ngayTaiKham),
     'Trạng thái': p._status === 'over' ? 'Quá hạn tái khám' : p._status === 'due' ? 'Đến hẹn hôm nay' : p._status === 'soon' ? 'Sắp đến hẹn (ngày mai)' : 'Đang uống thuốc',
   }));
 }
 
-async function exportGroup(kind, nhaFilterArg){
+async function exportGroup(kind, nhaFilterArg, khuFilterArg){
   const nf = nhaFilterArg !== undefined ? nhaFilterArg : state.nha;
+  const kf = khuFilterArg !== undefined ? khuFilterArg : state.khu;
   const all = patients.map(p => ({...p, _status: computeStatus(p)}))
-    .filter(p => nf === 'all' ? true : (p.nha||'').trim() === nf);
+    .filter(p => nf === 'all' ? true : (p.nha||'').trim() === nf)
+    .filter(p => kf === 'all' ? true : (p.khu||'').trim() === kf);
   let list, filename, sheetName;
-  const nhaSlug = nf === 'all' ? '' : ('_' + nf.replace(/[^\p{L}\p{N}]+/gu, '-'));
+  const nhaSlug = nf === 'all' ? '' : ('_Nha-' + nf.replace(/[^\p{L}\p{N}]+/gu, '-'));
+  const khuSlug = kf === 'all' ? '' : ('_Khu-' + kf.replace(/[^\p{L}\p{N}]+/gu, '-'));
   if(kind === 'mental'){
     list = all.filter(p => loaiArray(p).includes('mental'));
-    filename = 'Danh_sach_Tam_than' + nhaSlug + '_' + todayStr() + '.xlsx';
+    filename = 'Danh_sach_Tam_than' + nhaSlug + khuSlug + '_' + todayStr() + '.xlsx';
     sheetName = 'Tâm thần';
   }else{
     list = all.filter(p => loaiArray(p).includes('bp') || loaiArray(p).includes('dm'));
-    filename = 'Danh_sach_Huyet_ap_Tieu_duong' + nhaSlug + '_' + todayStr() + '.xlsx';
+    filename = 'Danh_sach_Huyet_ap_Tieu_duong' + nhaSlug + khuSlug + '_' + todayStr() + '.xlsx';
     sheetName = 'Huyet ap - Tieu duong';
   }
   list.sort((a,b)=> (a.hoTen||'').localeCompare(b.hoTen||'', 'vi'));
   const rows = buildRows(list);
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:20},{wch:26},{wch:22},{wch:14},{wch:12},{wch:13},{wch:18}];
+  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:20},{wch:26},{wch:22},{wch:14},{wch:10},{wch:12},{wch:13},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   const buf = XLSX.write(wb, {type:'array', bookType:'xlsx'});
@@ -599,6 +610,10 @@ function renderToolbar(){
         <option value="all" ${state.nha==='all'?'selected':''}>Tất cả nhà</option>
         ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${state.nha===n?'selected':''}>${escapeHtml(n)}</option>`).join('')}
       </select>
+      <select class="select-filter" id="khu-select">
+        <option value="all" ${state.khu==='all'?'selected':''}>Tất cả khu</option>
+        ${distinctKhu().map(k=>`<option value="${escapeAttr(k)}" ${state.khu===k?'selected':''}>Khu ${escapeHtml(k)}</option>`).join('')}
+      </select>
     </div>
     <div class="spacer"></div>
     <div class="actions-row">
@@ -638,6 +653,7 @@ function renderTable(list){
       <td data-label="Chẩn đoán">${escapeHtml(p.chanDoan||'')}</td>
       <td data-label="Thuốc">${escapeHtml(p.thuoc||'')}</td>
       <td data-label="Nhà">${escapeHtml(p.nha||'')}</td>
+      <td data-label="Khu">${escapeHtml(p.khu||'')}</td>
       <td data-label="Ngày khám">${fmtDate(p.ngayKham)}</td>
       <td data-label="Ngày tái khám">${fmtDate(p.ngayTaiKham)}</td>
       <td data-label="Trạng thái"><span class="status ${st}"><span class="dot"></span>${stLabel}</span></td>
@@ -657,7 +673,7 @@ function renderTable(list){
     <table>
       <thead><tr>
         <th>STT</th><th>Họ và tên</th><th>Năm sinh</th><th>Giới tính</th><th>Loại</th>
-        <th>Chẩn đoán</th><th>Thuốc</th><th>Nhà</th><th>Ngày khám</th><th>Ngày tái khám</th><th>Trạng thái</th><th></th>
+        <th>Chẩn đoán</th><th>Thuốc</th><th>Nhà</th><th>Khu</th><th>Ngày khám</th><th>Ngày tái khám</th><th>Trạng thái</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
@@ -748,9 +764,13 @@ function renderFormModal(){
             <label>Thuốc</label>
             <input type="text" id="f-thuoc" value="${escapeAttr(p.thuoc||'')}" placeholder="Amlodipin 5mg">
           </div>
-          <div class="field full">
-            <label>Nhà / Khu vực</label>
-            <input type="text" id="f-nha" value="${escapeAttr(p.nha||'')}" placeholder="Nhà 1 - Khu 1">
+          <div class="field">
+            <label>Nhà</label>
+            <input type="text" id="f-nha" value="${escapeAttr(p.nha||'')}" placeholder="1">
+          </div>
+          <div class="field">
+            <label>Khu</label>
+            <input type="text" id="f-khu" value="${escapeAttr(p.khu||'')}" placeholder="1">
           </div>
           <div class="field">
             <label>Ngày khám</label>
@@ -803,6 +823,7 @@ function renderFormModal(){
       chanDoan: wrap.querySelector('#f-chanDoan').value.trim(),
       thuoc: wrap.querySelector('#f-thuoc').value.trim(),
       nha: wrap.querySelector('#f-nha').value.trim(),
+      khu: wrap.querySelector('#f-khu').value.trim(),
       ngayKham: wrap.querySelector('#f-ngayKham').value,
       ngayTaiKham: wrap.querySelector('#f-ngayTaiKham').value,
     };
@@ -821,18 +842,29 @@ function renderFormModal(){
 
 function renderExportModal(){
   const nhaList = distinctNha();
+  const khuList = distinctKhu();
   let localNha = state.nha;
+  let localKhu = state.khu;
   const wrap = el(`<div class="overlay" id="overlay"></div>`);
   wrap.appendChild(el(`
     <div class="modal modal-sm">
       <div class="modal-head"><h3>Xuất báo cáo Excel</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
       <div class="modal-body">
-        <div class="field">
-          <label>Chọn Nhà để xuất</label>
-          <select id="export-nha-select">
-            <option value="all" ${localNha==='all'?'selected':''}>Tất cả các nhà</option>
-            ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${localNha===n?'selected':''}>${escapeHtml(n)}</option>`).join('')}
-          </select>
+        <div class="form-grid">
+          <div class="field">
+            <label>Chọn Nhà để xuất</label>
+            <select id="export-nha-select">
+              <option value="all" ${localNha==='all'?'selected':''}>Tất cả các nhà</option>
+              ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${localNha===n?'selected':''}>${escapeHtml(n)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Chọn Khu để xuất</label>
+            <select id="export-khu-select">
+              <option value="all" ${localKhu==='all'?'selected':''}>Tất cả các khu</option>
+              ${khuList.map(k=>`<option value="${escapeAttr(k)}" ${localKhu===k?'selected':''}>Khu ${escapeHtml(k)}</option>`).join('')}
+            </select>
+          </div>
         </div>
         <div class="export-options">
           <button class="export-opt" id="export-mental">
@@ -852,12 +884,14 @@ function renderExportModal(){
   `));
   document.body.appendChild(wrap);
   const nhaSelect = wrap.querySelector('#export-nha-select');
+  const khuSelect = wrap.querySelector('#export-khu-select');
   nhaSelect.addEventListener('change', ()=>{ localNha = nhaSelect.value; });
+  khuSelect.addEventListener('change', ()=>{ localKhu = khuSelect.value; });
   wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
   wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
   wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
-  wrap.querySelector('#export-mental').addEventListener('click', ()=>{ exportGroup('mental', nhaSelect.value); closeModal(); });
-  wrap.querySelector('#export-bpdm').addEventListener('click', ()=>{ exportGroup('bpdm', nhaSelect.value); closeModal(); });
+  wrap.querySelector('#export-mental').addEventListener('click', ()=>{ exportGroup('mental', nhaSelect.value, khuSelect.value); closeModal(); });
+  wrap.querySelector('#export-bpdm').addEventListener('click', ()=>{ exportGroup('bpdm', nhaSelect.value, khuSelect.value); closeModal(); });
 }
 
 async function importFromFile(file){
@@ -882,7 +916,8 @@ async function importFromFile(file){
       loai,
       chanDoan: String(r['Chẩn đoán'] || r['Chan doan'] || '').trim(),
       thuoc: String(r['Thuốc'] || r['Thuoc'] || '').trim(),
-      nha: String(r['Nhà'] || r['Nha'] || r['Khu'] || '').trim(),
+      nha: String(r['Nhà'] || r['Nha'] || '').trim(),
+      khu: String(r['Khu'] || r['Khu vực'] || r['Khu vuc'] || '').trim(),
       ngayKham: parseAnyDate(r['Ngày khám'] || r['Ngay kham']),
       ngayTaiKham: parseAnyDate(r['Ngày tái khám'] || r['Ngay tai kham']),
     };
@@ -946,6 +981,7 @@ function wireEvents(){
   document.getElementById('cat-select')?.addEventListener('change', (e)=>{ state.category = e.target.value; render(); });
   document.getElementById('status-select')?.addEventListener('change', (e)=>{ state.status = e.target.value; render(); });
   document.getElementById('nha-select')?.addEventListener('change', (e)=>{ state.nha = e.target.value; render(); });
+  document.getElementById('khu-select')?.addEventListener('change', (e)=>{ state.khu = e.target.value; render(); });
   document.querySelectorAll('[data-quickfilter]').forEach(b=> b.addEventListener('click', ()=>{
     if(b.dataset.resetall){ state.category='all'; state.nha='all'; state.search=''; }
     state.status = b.dataset.quickfilter;
