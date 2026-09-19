@@ -12,6 +12,7 @@
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyAzORIi4PXbYT993dGO_37DUR0xG2qlR-U",
     authDomain: "ql-benh-man-tinh.firebaseapp.com",
@@ -20,9 +21,12 @@
     messagingSenderId: "1036151855833",
     appId: "1:1036151855833:web:078488cc0b07cf1e253cc8"
   };
+
   const fbApp = initializeApp(firebaseConfig);
   const fbDb = getFirestore(fbApp);
   const fbAuth = getAuth(fbApp);
+
+  // Expose a small bridge so the classic (non-module) app script below can use Firestore.
   window.__fb = {
     ready: new Promise((resolve) => {
       onAuthStateChanged(fbAuth, (user) => {
@@ -30,6 +34,7 @@
       });
       signInAnonymously(fbAuth).catch((err) => {
         console.error("Firebase anonymous sign-in failed:", err);
+        // Resolve anyway so the app can render an error state instead of hanging.
         resolve();
       });
     }),
@@ -81,6 +86,7 @@
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
   body{font-family:'Times New Roman', Times, serif;font-size:15px;line-height:1.5;}
   .wrap{max-width:1280px;margin:0 auto;padding:20px 20px 56px;}
+
   /* Header */
   header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
   .brand{display:flex;align-items:center;gap:12px;}
@@ -105,6 +111,7 @@
   .btn:disabled{opacity:.45;cursor:not-allowed;}
   .btn.sm{padding:5px 10px;font-size:12.5px;border-radius:7px;}
   .btn svg{width:14px;height:14px;flex-shrink:0;}
+
   /* Alerts (compact) */
   .alert-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:9px;margin-bottom:16px;font-size:13px;}
   .alert-bar-label{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:700;}
@@ -116,19 +123,19 @@
   .alert-chip.soon{background:var(--primary-tint);color:var(--primary-dark);}
   .status-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:9px;margin-bottom:16px;font-size:13px;background:var(--primary-tint);color:var(--primary-dark);border:1px solid color-mix(in srgb, var(--primary) 30%, transparent);}
   .status-banner button{background:none;border:none;color:inherit;font-weight:700;text-decoration:underline;padding:0;font-size:13px;}
-  /* Stat cards - Compact and balanced */
-  .stats{display:grid;grid-template-columns:repeat(4, minmax(0, 1fr));gap:12px;margin-bottom:20px;}
-  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);text-align:left;font-family:inherit;cursor:pointer;transition:.12s ease;}
-  .stat:hover{border-color:var(--primary);box-shadow:0 4px 16px rgba(0,0,0,0.09);}
-  .stat:active{transform:translateY(1px);}
-  .stat .num{font-size:22px;font-weight:800;font-family:'Times New Roman', Times, serif;line-height:1.1;}
-  .stat .lbl{color:var(--muted);font-size:12px;margin-top:4px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .stat .sub{color:var(--muted-2);font-size:11px;margin-top:2px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .stat.accent-mental .num{color:var(--mental);}
-  .stat.accent-bp .num{color:var(--bp);}
-  .stat.accent-ok .num{color:var(--ok);}
-  .stat.accent-warn .num{color:var(--warn);}
-  .stat.accent-danger .num{color:var(--danger);}
+
+  /* Stat strip (compact) */
+  .stat-strip{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+  .stat-seg{flex:1;display:flex;flex-direction:row;align-items:baseline;justify-content:center;gap:5px;padding:9px 4px;border:none;border-right:1px solid var(--border);background:transparent;font-family:inherit;cursor:pointer;transition:.12s ease;min-width:0;}
+  .stat-seg:last-child{border-right:none;}
+  .stat-seg:hover{background:var(--bg);}
+  .stat-seg:active{transform:translateY(1px);}
+  .stat-seg-num{font-size:17px;font-weight:800;font-family:'Times New Roman', Times, serif;line-height:1;color:var(--ink);white-space:nowrap;}
+  .stat-seg-lbl{font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat-seg.accent-ok .stat-seg-num{color:var(--ok);}
+  .stat-seg.accent-warn .stat-seg-num{color:var(--warn);}
+  .stat-seg.accent-danger .stat-seg-num{color:var(--danger);}
+
   /* Toolbar */
   .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
   .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border);}
@@ -146,49 +153,48 @@
   .export-opt{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px;border:1px solid var(--border);border-radius:10px;background:var(--bg);text-align:left;width:100%;}
   .export-opt:hover{border-color:var(--primary);background:var(--primary-tint);}
   .export-opt .opt-desc{font-size:12.5px;color:var(--muted);font-weight:500;}
-  /* Table layout with adjusted columns */
+
+  /* Table */
   .tbl-scroll{overflow-x:auto;}
-  table{width:100%;border-collapse:collapse;min-width:920px;border:1px solid var(--border);table-layout:fixed;}
+  table{width:100%;border-collapse:collapse;min-width:980px;border:1px solid var(--border);table-layout:fixed;}
   thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:11px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:var(--bg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   thead th:last-child{border-right:none;}
-  tbody td{padding:10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;}
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;font-size:13.5px;word-wrap:break-word;overflow-wrap:break-word;}
   tbody td:last-child{border-right:none;}
+  /* balanced column widths, proportional to expected content */
+  thead th:nth-child(1), tbody td:nth-child(1){width:3.5%;}
+  thead th:nth-child(2), tbody td:nth-child(2){width:14%;}
+  thead th:nth-child(3), tbody td:nth-child(3){width:7%;}
+  thead th:nth-child(4), tbody td:nth-child(4){width:7%;}
+  thead th:nth-child(5), tbody td:nth-child(5){width:14%;}
+  thead th:nth-child(6), tbody td:nth-child(6){width:13%;}
+  thead th:nth-child(7), tbody td:nth-child(7){width:7%;}
+  thead th:nth-child(8), tbody td:nth-child(8){width:7%;}
+  thead th:nth-child(9), tbody td:nth-child(9){width:8.5%;}
+  thead th:nth-child(10), tbody td:nth-child(10){width:8.5%;}
+  thead th:nth-child(11), tbody td:nth-child(11){width:9%;}
+  thead th:nth-child(12), tbody td:nth-child(12){width:4.5%;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:var(--primary-tint);}
-  /* Specific column width balancing */
-  th:nth-child(1), td:nth-child(1) { width: 50px; text-align: center; } /* STT */
-  th:nth-child(2), td:nth-child(2) { width: 155px; } /* Họ và tên */
-  th:nth-child(3), td:nth-child(3) { width: 80px; text-align: center; } /* Năm sinh */
-  th:nth-child(4), td:nth-child(4) { width: 80px; text-align: center; } /* Giới tính */
-  th:nth-child(5), td:nth-child(5) { width: 130px; } /* Phân loại */
-  th:nth-child(6), td:nth-child(6) { width: 150px; } /* Chẩn đoán */
-  th:nth-child(7), td:nth-child(7) { width: 140px; } /* Thuốc */
-  th:nth-child(8), td:nth-child(8) { width: 60px; text-align: center; } /* Nhà */
-  th:nth-child(9), td:nth-child(9) { width: 60px; text-align: center; } /* Khu */
-  th:nth-child(10), td:nth-child(10) { width: 95px; text-align: center; } /* Ngày khám */
-  th:nth-child(11), td:nth-child(11) { width: 105px; text-align: center; } /* Ngày tái khám */
-  th:nth-child(12), td:nth-child(12) { width: 110px; text-align: center; } /* Trạng thái */
-  th:nth-child(13), td:nth-child(13) { width: 75px; text-align: center; } /* Thao tác */
-
   td.name{font-weight:600;}
   td.stt{color:var(--muted-2);font-variant-numeric:tabular-nums;}
   .badge-group{display:inline-flex;gap:4px;flex-wrap:wrap;}
-  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
+  .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;}
   .badge.mental{background:var(--mental-tint);color:var(--mental);}
   .badge.bp{background:var(--bp-tint);color:var(--bp);}
   .badge.dm{background:#FDF0E5;color:#B5591E;}
   :root[data-theme="dark"] .badge.dm, @media (prefers-color-scheme:dark){ .badge.dm{background:#3A2712;color:#E3944F;} }
-  .status{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;}
+  .status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;}
   .status .dot{width:7px;height:7px;border-radius:50%;}
   .status.ok{color:var(--ok);} .status.ok .dot{background:var(--ok);}
   .status.soon{color:var(--primary);} .status.soon .dot{background:var(--primary);}
   .status.due{color:var(--warn);} .status.due .dot{background:var(--warn);}
   .status.over{color:var(--danger);} .status.over .dot{background:var(--danger);}
-  .row-actions{display:flex;gap:4px;justify-content:center;}
-  .icon-btn{border:1px solid transparent;background:transparent;padding:5px;border-radius:7px;color:var(--muted);display:inline-flex;}
+  .row-actions{display:flex;gap:4px;justify-content:flex-end;}
+  .icon-btn{border:1px solid transparent;background:transparent;padding:6px;border-radius:7px;color:var(--muted);display:inline-flex;}
   .icon-btn:hover{background:var(--bg);color:var(--ink);}
   .icon-btn.del:hover{background:var(--danger-tint);color:var(--danger);}
-  .icon-btn svg{width:14px;height:14px;}
+  .icon-btn svg{width:15px;height:15px;}
   .empty{padding:56px 20px;text-align:center;color:var(--muted);}
   .empty svg{width:38px;height:38px;color:var(--muted-2);margin-bottom:10px;}
   .empty b{display:block;color:var(--ink);font-size:14.5px;margin-bottom:4px;}
@@ -196,6 +202,7 @@
   .view-hint{display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);}
   .view-hint svg{width:15px;height:15px;flex-shrink:0;color:var(--muted-2);}
   .view-hint .link{background:none;border:none;color:var(--primary-dark);font-weight:700;text-decoration:underline;font-size:13px;padding:0;}
+
   /* Modal */
   .overlay{position:fixed;inset:0;background:rgba(15,25,24,0.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;}
   .modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);}
@@ -213,6 +220,8 @@
   .field label{font-size:12.5px;font-weight:600;color:var(--muted);}
   .field input, .field select{padding:9px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--ink);font-size:13.5px;font-family:inherit;}
   .field input:focus, .field select:focus{outline:2px solid var(--primary);outline-offset:-1px;}
+  .radio-row{display:flex;gap:14px;padding-top:2px;}
+  .radio-row label{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink);}
   .chip-group{display:flex;gap:8px;flex-wrap:wrap;}
   .chip{padding:8px 16px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--muted);font-size:13px;font-weight:600;}
   .chip.on{background:var(--primary);border-color:var(--primary);color:#fff;}
@@ -222,13 +231,11 @@
   .err-txt{color:var(--danger);font-size:12.5px;min-height:16px;}
   .lock-note{display:flex;gap:8px;color:var(--muted);font-size:12.5px;background:var(--bg);border-radius:8px;padding:10px 12px;margin-top:14px;}
   .lock-note svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;}
-  @media (max-width:768px){
-    .stats{grid-template-columns:repeat(2, minmax(0, 1fr));}
-  }
+
   @media (max-width:640px){
     .wrap{padding:14px 12px 40px;}
     header.top{gap:10px;}
-    .stats{grid-template-columns:1fr;}
+    .stats{grid-template-columns:1fr 1fr;}
     .toolbar{flex-direction:column;align-items:stretch;}
     .search{max-width:none;}
     .filters-row select{flex:1;min-width:0;}
@@ -237,11 +244,13 @@
     .form-grid{grid-template-columns:1fr;}
     thead{display:none;}
     .tbl-scroll{overflow-x:visible;padding:12px;}
-    table, tbody, tr, td{display:block;width:100%;table-layout:auto;}
+    table{table-layout:auto;}
+    table, tbody, tr, td{display:block;width:100%;}
+    thead th, tbody td{width:auto !important;}
     tbody tr{background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:10px;}
     tbody tr:last-child{margin-bottom:0;}
     tbody tr:hover{background:var(--surface);}
-    tbody td{border:none;padding:4px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100% !important;text-align:right !important;}
+    tbody td{border:none;padding:4px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;}
     tbody td::before{content:attr(data-label);color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0;}
     tbody td[data-label="STT"]{display:none;}
     td.name{font-size:15px;}
@@ -253,6 +262,7 @@
 </head>
 <body>
 <div class="wrap" id="app"></div>
+
 <script type="module">
 /* ============================= ICONS ============================= */
 const ICON = {
@@ -270,24 +280,29 @@ const ICON = {
   inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="16" y2="12"/><line x1="12" x2="12.01" y1="8" y2="8"/></svg>',
 };
+
 /* ============================= STATE ============================= */
 const ADMIN_PASSWORD = "123456";
 let patients = [];
 let dbReady = false;
+let dbHandle = null;
+let unsub = null;
+
 let state = {
   isAdmin: (localStorage.getItem('cms_isAdmin') === '1'),
-  category: 'all',      // all | mental | bpdm (Huyết áp/Tiểu đường)
-  nha: 'all',
-  khu: 'all',
-  status: 'ontrack',
+  category: 'all',      // all | mental | bp | dm
+  nha: 'all',            // 'all' or a specific nha value
+  khu: 'all',            // 'all' or a specific khu value
+  status: 'ontrack',     // all | ontrack | soon | due | over
   search: '',
-  modal: null,
-  editing: null,
+  modal: null,           // 'form' | 'delete' | 'login'
+  editing: null,         // patient object being edited, or null for new
   deleteTarget: null,
   formError: '',
   loginError: '',
   importStatus: '',
 };
+
 function todayStr(){
   const d = new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -314,10 +329,10 @@ function computeStatus(p){
   return 'active';
 }
 function categoryLabel(c){
-  return c === 'mental' ? 'Tâm thần' : 'Huyết áp / Tiểu đường';
+  return c === 'mental' ? 'Tâm thần' : c === 'dm' ? 'Tiểu đường' : 'Huyết áp';
 }
 function categoryBadgeClass(c){
-  return c === 'mental' ? 'mental' : 'bp';
+  return c === 'mental' ? 'mental' : c === 'dm' ? 'dm' : 'bp';
 }
 function loaiArray(p){
   const l = p && p.loai;
@@ -347,8 +362,10 @@ function parseAnyDate(v){
   if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
   return '';
 }
-/* ============================= DB WIRING ============================= */
+
+/* ============================= DB WIRING (Firebase Firestore) ============================= */
 let dbError = null;
+
 async function initDb(){
   try{
     await window.__fb.ready;
@@ -360,7 +377,7 @@ async function initDb(){
       render();
     }, (err)=>{
       console.error('Firestore error', err);
-      dbError = 'Không thể kết nối tới Firestore. Kiểm tra lại quy tắc bảo mật và cấu hình Firebase.';
+      dbError = 'Không thể kết nối tới Firestore. Kiểm tra lại quy tắc bảo mật (Rules) và cấu hình Firebase.';
       dbReady = true;
       render();
     });
@@ -371,6 +388,7 @@ async function initDb(){
     render();
   }
 }
+
 async function savePatient(data, id){
   if(id){
     await window.__fb.updateDoc(window.__fb.doc(id), data);
@@ -378,28 +396,27 @@ async function savePatient(data, id){
     await window.__fb.addDoc(window.__fb.collection(), data);
   }
 }
+
 async function deletePatient(id){
   await window.__fb.deleteDoc(window.__fb.doc(id));
 }
+
 /* ============================= DERIVED DATA ============================= */
 function distinctNha(){
   const set = new Set(patients.map(p => (p.nha||'').trim()).filter(Boolean));
   return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
 }
+
 function distinctKhu(){
   const set = new Set(patients.map(p => (p.khu||'').trim()).filter(Boolean));
   return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
 }
+
 function filteredPatients(){
   const q = normalizeVN(state.search.trim());
   return patients
     .map(p => ({...p, _status: computeStatus(p)}))
-    .filter(p => {
-      if(state.category === 'all') return true;
-      if(state.category === 'mental') return loaiArray(p).includes('mental');
-      if(state.category === 'bpdm') return loaiArray(p).includes('bp') || loaiArray(p).includes('dm');
-      return true;
-    })
+    .filter(p => state.category === 'all' ? true : loaiArray(p).includes(state.category))
     .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha)
     .filter(p => state.khu === 'all' ? true : (p.khu||'').trim() === state.khu)
     .filter(p => {
@@ -426,15 +443,22 @@ function filteredPatients(){
       return da - db_;
     });
 }
+
 function counts(){
   const all = patients.map(p => ({...p, _status: computeStatus(p)}));
   return {
     total: all.length,
     mental: all.filter(p=>loaiArray(p).includes('mental')).length,
+    bp: all.filter(p=>loaiArray(p).includes('bp')).length,
+    dm: all.filter(p=>loaiArray(p).includes('dm')).length,
     bpdm: all.filter(p=>loaiArray(p).includes('bp')||loaiArray(p).includes('dm')).length,
+    ontrack: all.filter(p=>p._status==='active').length,
+    soon: all.filter(p=>p._status==='soon').length,
+    due: all.filter(p=>p._status==='due').length,
     over: all.filter(p=>p._status==='over').length,
   };
 }
+
 /* ============================= EXPORT ============================= */
 function buildRows(list){
   return list.map((p, idx) => ({
@@ -442,8 +466,7 @@ function buildRows(list){
     'Họ và tên': p.hoTen || '',
     'Năm sinh': p.namSinh || '',
     'Giới tính': p.gioiTinh || '',
-    'Loại': loaiArray(p).map(categoryLabel).join(', '),
-    'Chẩn đoán': p.chanDoan || '',
+    'Chẩn đoán': loaiArray(p).map(categoryLabel).join(', '),
     'Thuốc': p.thuoc || '',
     'Nhà': p.nha || '',
     'Khu': p.khu || '',
@@ -452,6 +475,7 @@ function buildRows(list){
     'Trạng thái': p._status === 'over' ? 'Quá hạn tái khám' : p._status === 'due' ? 'Đến hẹn hôm nay' : p._status === 'soon' ? 'Sắp đến hẹn (ngày mai)' : 'Đang uống thuốc',
   }));
 }
+
 async function exportGroup(kind, nhaFilterArg, khuFilterArg){
   const nf = nhaFilterArg !== undefined ? nhaFilterArg : state.nha;
   const kf = khuFilterArg !== undefined ? khuFilterArg : state.khu;
@@ -473,11 +497,12 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
   list.sort((a,b)=> (a.hoTen||'').localeCompare(b.hoTen||'', 'vi'));
   const rows = buildRows(list);
   const ws = XLSX.utils.json_to_sheet(rows);
-  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:22},{wch:26},{wch:22},{wch:14},{wch:10},{wch:12},{wch:13},{wch:18}];
+  ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:24},{wch:22},{wch:14},{wch:10},{wch:12},{wch:13},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   const buf = XLSX.write(wb, {type:'array', bookType:'xlsx'});
   const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+
   try{
     const downloads = window.claude?.use ? await claude.use("downloads") : null;
     if(downloads){
@@ -494,16 +519,19 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
     alert('Không thể xuất file. Vui lòng thử lại.');
   }
 }
+
 /* ============================= RENDER ============================= */
 function el(html){
   const t = document.createElement('template');
   t.innerHTML = html.trim();
   return t.content.firstElementChild;
 }
+
 function render(){
   const app = document.getElementById('app');
   const c = counts();
   const list = filteredPatients();
+
   app.innerHTML = `
     ${renderHeader()}
     ${renderStatusBanner()}
@@ -522,6 +550,7 @@ function render(){
   if(state.modal === 'login') renderLoginModal();
   if(state.modal === 'export') renderExportModal();
 }
+
 function renderHeader(){
   return `
   <header class="top">
@@ -529,7 +558,7 @@ function renderHeader(){
       <div class="brand-mark">${ICON.heart.replace('currentColor','#fff')}</div>
       <div>
         <h1>Quản lý Bệnh mạn tính</h1>
-        <div class="brand-sub">Huyết áp / Tiểu đường · Tâm thần</div>
+        <div class="brand-sub">Tâm thần · Huyết áp · Tiểu đường</div>
       </div>
     </div>
     <div class="auth-box">
@@ -543,50 +572,44 @@ function renderHeader(){
     </div>
   </header>`;
 }
+
 function renderAlerts(c){
   const chips = [];
   if(c.over > 0) chips.push(`<button class="alert-chip over" data-quickfilter="over">${c.over} quá hạn</button>`);
+  if(c.due > 0) chips.push(`<button class="alert-chip due" data-quickfilter="due">${c.due} hẹn hôm nay</button>`);
+  if(c.soon > 0) chips.push(`<button class="alert-chip soon" data-quickfilter="soon">${c.soon} hẹn ngày mai</button>`);
   if(!chips.length) return '';
   return `<div class="alert-bar"><span class="alert-bar-label">${ICON.warn}Cần chú ý:</span>${chips.join('')}</div>`;
 }
+
 function renderStatusBanner(){
   if(!state.importStatus) return '';
   return `<div class="status-banner"><span>${escapeHtml(state.importStatus)}</span><button id="dismiss-status">Đóng</button></div>`;
 }
+
 function renderStats(c){
-  return `
-  <div class="stats">
-    <button class="stat" data-quickfilter="all" data-resetall="1" title="Xem tất cả">
-      <div class="num">${c.total}</div>
-      <div class="lbl">Tổng bệnh nhân</div>
-      <div class="sub">Tất cả hồ sơ quản lý</div>
-    </button>
-    <button class="stat accent-bp" data-quickfilter="bpdm" title="Xem nhóm Huyết áp / Tiểu đường">
-      <div class="num">${c.bpdm}</div>
-      <div class="lbl">Huyết áp / Tiểu đường</div>
-      <div class="sub">Quản lý định kỳ</div>
-    </button>
-    <button class="stat accent-mental" data-quickfilter="mental" title="Xem nhóm Tâm thần">
-      <div class="num">${c.mental}</div>
-      <div class="lbl">Tâm thần</div>
-      <div class="sub">Theo dõi sát sao</div>
-    </button>
-    <button class="stat accent-danger" data-quickfilter="over" title="Xem danh sách quá hạn">
-      <div class="num">${c.over}</div>
-      <div class="lbl">Quá hạn tái khám</div>
-      <div class="sub">Cần xử lý ngay</div>
-    </button>
+  const items = [
+    {key:'all', resetall:true, cls:'', num:c.total, lbl:'Tổng', title:'Xem tất cả'},
+    {key:'ontrack', cls:'accent-ok', num:c.ontrack, lbl:'Đang uống', title:'Xem danh sách đang uống thuốc'},
+    {key:'upcoming', cls:'accent-warn', num:c.soon + c.due, lbl:'Cần nhắc', title:'Xem danh sách cần nhắc lịch'},
+    {key:'over', cls:'accent-danger', num:c.over, lbl:'Quá hạn', title:'Xem danh sách quá hạn'},
+  ];
+  return `<div class="stat-strip">
+    ${items.map(it=>`<button class="stat-seg ${it.cls}" data-quickfilter="${it.key}" ${it.resetall?'data-resetall="1"':''} title="${it.title}">
+      <span class="stat-seg-num">${it.num}</span><span class="stat-seg-lbl">${it.lbl}</span>
+    </button>`).join('')}
   </div>`;
 }
+
 function renderToolbar(){
-  const catOptions = [['all','Tất cả phân loại'],['bpdm','Huyết áp / Tiểu đường'],['mental','Tâm thần']];
+  const catOptions = [['all','Tất cả loại'],['mental','Tâm thần'],['bp','Huyết áp'],['dm','Tiểu đường']];
   const statusOptions = [['ontrack','Đang uống thuốc'],['upcoming','Cần nhắc lịch'],['soon','Sắp đến hẹn (mai)'],['due','Đến hẹn hôm nay'],['over','Quá hạn'],['all','Tất cả trạng thái']];
   const nhaList = distinctNha();
   return `
   <div class="toolbar">
     <div class="search">
       ${ICON.search}
-      <input type="text" id="search-input" placeholder="Tìm theo tên, nhà, khu..." value="${escapeAttr(state.search)}">
+      <input type="text" id="search-input" placeholder="Tìm theo tên, nhà, khu, ngày khám..." value="${escapeAttr(state.search)}">
     </div>
     <div class="filters-row">
       <select class="select-filter" id="cat-select">
@@ -601,7 +624,7 @@ function renderToolbar(){
       </select>
       <select class="select-filter" id="khu-select">
         <option value="all" ${state.khu==='all'?'selected':''}>Tất cả khu</option>
-        ${distinctKhu().map(k=>`<option value="${escapeAttr(k)}" ${state.khu===k?'selected':''}>Khu${escapeHtml(k)}</option>`).join('')}
+        ${distinctKhu().map(k=>`<option value="${escapeAttr(k)}" ${state.khu===k?'selected':''}>Khu ${escapeHtml(k)}</option>`).join('')}
       </select>
     </div>
     <div class="spacer"></div>
@@ -613,10 +636,12 @@ function renderToolbar(){
     </div>
   </div>`;
 }
+
 function renderViewOnlyHint(){
   if(state.isAdmin) return '';
   return `<div class="view-hint">${ICON.lock}<span>Bạn đang ở <b>chế độ xem</b>. <button class="link" id="hint-login">Đăng nhập Admin</button> để thêm, sửa hoặc xoá bệnh nhân.</span></div>`;
 }
+
 function renderTable(list){
   if(!dbReady){
     return `<div class="empty">Đang tải dữ liệu...</div>`;
@@ -633,12 +658,11 @@ function renderTable(list){
     return `
     <tr data-id="${p.id}">
       <td class="stt" data-label="STT">${idx+1}</td>
-      <td class="name" data-label="Họ và tên" title="${escapeAttr(p.hoTen||'')}">${escapeHtml(p.hoTen||'')}</td>
+      <td class="name" data-label="Họ và tên">${escapeHtml(p.hoTen||'')}</td>
       <td data-label="Năm sinh">${escapeHtml(p.namSinh||'')}</td>
       <td data-label="Giới tính">${escapeHtml(p.gioiTinh||'')}</td>
-      <td data-label="Phân loại"><span class="badge-group">${loaiArray(p).map(c=>`<span class="badge ${categoryBadgeClass(c)}">${categoryLabel(c)}</span>`).join('')}</span></td>
-      <td data-label="Chẩn đoán" title="${escapeAttr(p.chanDoan||'')}">${escapeHtml(p.chanDoan||'')}</td>
-      <td data-label="Thuốc" title="${escapeAttr(p.thuoc||'')}">${escapeHtml(p.thuoc||'')}</td>
+      <td data-label="Chẩn đoán"><span class="badge-group">${loaiArray(p).map(c=>`<span class="badge ${categoryBadgeClass(c)}">${categoryLabel(c)}</span>`).join('')}</span></td>
+      <td data-label="Thuốc">${escapeHtml(p.thuoc||'')}</td>
       <td data-label="Nhà">${escapeHtml(p.nha||'')}</td>
       <td data-label="Khu">${escapeHtml(p.khu||'')}</td>
       <td data-label="Ngày khám">${fmtDate(p.ngayKham)}</td>
@@ -654,17 +678,19 @@ function renderTable(list){
       </td>
     </tr>`;
   }).join('');
+
   return `
   <div class="tbl-scroll">
     <table>
       <thead><tr>
-        <th>STT</th><th>Họ và tên</th><th>Năm sinh</th><th>Giới tính</th><th>Phân loại</th>
-        <th>Chẩn đoán</th><th>Thuốc</th><th>Nhà</th><th>Khu</th><th>Ngày khám</th><th>Ngày tái khám</th><th>Trạng thái</th><th>Thao tác</th>
+        <th>STT</th><th>Họ và tên</th><th>Năm sinh</th><th>Giới tính</th><th>Chẩn đoán</th>
+        <th>Thuốc</th><th>Nhà</th><th>Khu</th><th>Ngày khám</th><th>Ngày tái khám</th><th>Trạng thái</th><th></th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
   </div>`;
 }
+
 /* ============================= MODALS ============================= */
 function renderLoginModal(){
   const wrap = el(`<div class="overlay" id="overlay"></div>`);
@@ -706,6 +732,7 @@ function renderLoginModal(){
   wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
   wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
 }
+
 function renderFormModal(){
   const p = state.editing || { loai:['bp'], gioiTinh:'Nữ' };
   const isEdit = !!(state.editing && state.editing.id);
@@ -732,17 +759,13 @@ function renderFormModal(){
             </select>
           </div>
           <div class="field full">
-            <label>Phân loại bệnh (chọn nhóm phù hợp)</label>
+            <label>Chẩn đoán (chọn 1 hoặc nhiều)</label>
             <div class="chip-group" id="f-loai-group">
+              <button type="button" data-v="mental" class="chip ${selectedLoai.includes('mental')?'on':''}">Tâm thần</button>
               <button type="button" data-v="bp" class="chip ${selectedLoai.includes('bp')?'on':''}">Huyết áp</button>
               <button type="button" data-v="dm" class="chip ${selectedLoai.includes('dm')?'on':''}">Tiểu đường</button>
-              <button type="button" data-v="mental" class="chip ${selectedLoai.includes('mental')?'on':''}">Tâm thần</button>
             </div>
-            <div class="chip-hint">Có thể chọn kết hợp nhiều nhóm nếu bệnh nhân mắc đồng thời.</div>
-          </div>
-          <div class="field full">
-            <label>Chẩn đoán</label>
-            <input type="text" id="f-chanDoan" value="${escapeAttr(p.chanDoan||'')}" placeholder="Tăng huyết áp độ II">
+            <div class="chip-hint">Có thể chọn nhiều loại nếu bệnh nhân mắc đồng thời (ví dụ vừa Tâm thần vừa Huyết áp).</div>
           </div>
           <div class="field full">
             <label>Thuốc</label>
@@ -774,6 +797,7 @@ function renderFormModal(){
     </div>
   `));
   document.body.appendChild(wrap);
+
   const chipGroup = wrap.querySelector('#f-loai-group');
   chipGroup.querySelectorAll('button').forEach(b=>{
     b.addEventListener('click', ()=>{
@@ -783,9 +807,11 @@ function renderFormModal(){
       else { selectedLoai.push(v); b.classList.add('on'); }
     });
   });
+
   wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
   wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
   wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
+
   wrap.querySelector('#form-submit').addEventListener('click', async ()=>{
     const hoTen = wrap.querySelector('#f-hoTen').value.trim();
     if(!hoTen){
@@ -793,7 +819,7 @@ function renderFormModal(){
       return;
     }
     if(selectedLoai.length === 0){
-      wrap.querySelector('#form-err').textContent = 'Vui lòng chọn ít nhất 1 phân loại bệnh.';
+      wrap.querySelector('#form-err').textContent = 'Vui lòng chọn ít nhất 1 loại bệnh.';
       return;
     }
     const data = {
@@ -801,7 +827,6 @@ function renderFormModal(){
       namSinh: wrap.querySelector('#f-namSinh').value.trim(),
       gioiTinh: wrap.querySelector('#f-gioiTinh').value,
       loai: selectedLoai.slice(),
-      chanDoan: wrap.querySelector('#f-chanDoan').value.trim(),
       thuoc: wrap.querySelector('#f-thuoc').value.trim(),
       nha: wrap.querySelector('#f-nha').value.trim(),
       khu: wrap.querySelector('#f-khu').value.trim(),
@@ -820,6 +845,7 @@ function renderFormModal(){
     }
   });
 }
+
 function renderExportModal(){
   const nhaList = distinctNha();
   const khuList = distinctKhu();
@@ -842,18 +868,18 @@ function renderExportModal(){
             <label>Chọn Khu để xuất</label>
             <select id="export-khu-select">
               <option value="all" ${localKhu==='all'?'selected':''}>Tất cả các khu</option>
-              ${khuList.map(k=>`<option value="${escapeAttr(k)}" ${localKhu===k?'selected':''}>Khu${escapeHtml(k)}</option>`).join('')}
+              ${khuList.map(k=>`<option value="${escapeAttr(k)}" ${localKhu===k?'selected':''}>Khu ${escapeHtml(k)}</option>`).join('')}
             </select>
           </div>
         </div>
         <div class="export-options">
-          <button class="export-opt" id="export-bpdm">
-            <span class="badge bp">Huyết áp / Tiểu đường</span>
-            <span class="opt-desc">Xuất danh sách Huyết áp & Tiểu đường (.xlsx)</span>
-          </button>
           <button class="export-opt" id="export-mental">
             <span class="badge mental">Tâm thần</span>
-            <span class="opt-desc">Xuất danh sách Tâm thần (.xlsx)</span>
+            <span class="opt-desc">Xuất riêng danh sách Tâm thần (.xlsx)</span>
+          </button>
+          <button class="export-opt" id="export-bpdm">
+            <span class="badge bp">Huyết áp + Tiểu đường</span>
+            <span class="opt-desc">Xuất gộp chung 1 file (.xlsx)</span>
           </button>
         </div>
       </div>
@@ -870,9 +896,10 @@ function renderExportModal(){
   wrap.querySelector('#modal-close').addEventListener('click', ()=>closeModal());
   wrap.querySelector('#modal-cancel').addEventListener('click', ()=>closeModal());
   wrap.addEventListener('click', (e)=>{ if(e.target === wrap) closeModal(); });
-  wrap.querySelector('#export-bpdm').addEventListener('click', ()=>{ exportGroup('bpdm', nhaSelect.value, khuSelect.value); closeModal(); });
   wrap.querySelector('#export-mental').addEventListener('click', ()=>{ exportGroup('mental', nhaSelect.value, khuSelect.value); closeModal(); });
+  wrap.querySelector('#export-bpdm').addEventListener('click', ()=>{ exportGroup('bpdm', nhaSelect.value, khuSelect.value); closeModal(); });
 }
+
 async function importFromFile(file){
   const buf = await file.arrayBuffer();
   const wb = XLSX.read(buf, {type:'array'});
@@ -882,7 +909,7 @@ async function importFromFile(file){
   for(const r of rows){
     const hoTen = String(r['Họ và tên'] || r['Ho ten'] || r['Họ tên'] || '').trim();
     if(!hoTen){ fail++; continue; }
-    const loaiRaw = String(r['Loại'] || r['Loai'] || '').trim().toLowerCase();
+    const loaiRaw = String(r['Loại'] || r['Loai'] || r['Chẩn đoán'] || r['Chan doan'] || '').trim().toLowerCase();
     let loai = [];
     if(loaiRaw.includes('tâm thần') || loaiRaw.includes('tam than')) loai.push('mental');
     if(loaiRaw.includes('huyết áp') || loaiRaw.includes('huyet ap')) loai.push('bp');
@@ -893,18 +920,18 @@ async function importFromFile(file){
       namSinh: String(r['Năm sinh'] || r['Nam sinh'] || '').trim(),
       gioiTinh: String(r['Giới tính'] || r['Gioi tinh'] || '').trim() || 'Nữ',
       loai,
-      chanDoan: String(r['Chẩn đoán'] || r['Chan doan'] || '').trim(),
       thuoc: String(r['Thuốc'] || r['Thuoc'] || '').trim(),
       nha: String(r['Nhà'] || r['Nha'] || '').trim(),
       khu: String(r['Khu'] || r['Khu vực'] || r['Khu vuc'] || '').trim(),
       ngayKham: parseAnyDate(r['Ngày khám'] || r['Ngay kham']),
-      ngayTaiKham: parseAnyDate(r['Ngày tái khám'] || r['Ngay tai kam']),
+      ngayTaiKham: parseAnyDate(r['Ngày tái khám'] || r['Ngay tai kham']),
     };
     try{ await savePatient(data, null); ok++; }
     catch(e){ console.error('import row failed', e); fail++; }
   }
   return { ok, fail, total: rows.length };
 }
+
 function renderDeleteModal(){
   const p = state.deleteTarget;
   const wrap = el(`<div class="overlay" id="overlay"></div>`);
@@ -937,6 +964,7 @@ function renderDeleteModal(){
     }
   });
 }
+
 function closeModal(clearError=true){
   document.getElementById('overlay')?.remove();
   state.modal = null;
@@ -945,6 +973,7 @@ function closeModal(clearError=true){
   if(clearError){ state.formError=''; state.loginError=''; }
   render();
 }
+
 /* ============================= EVENTS ============================= */
 function wireEvents(){
   document.getElementById('btn-login')?.addEventListener('click', ()=>{ state.loginError=''; state.modal='login'; render(); });
@@ -953,20 +982,20 @@ function wireEvents(){
     state.isAdmin = false; localStorage.removeItem('cms_isAdmin'); render();
   });
   document.getElementById('btn-add')?.addEventListener('click', ()=>{ state.editing=null; state.formError=''; state.modal='form'; render(); });
+
   document.getElementById('cat-select')?.addEventListener('change', (e)=>{ state.category = e.target.value; render(); });
   document.getElementById('status-select')?.addEventListener('change', (e)=>{ state.status = e.target.value; render(); });
   document.getElementById('nha-select')?.addEventListener('change', (e)=>{ state.nha = e.target.value; render(); });
   document.getElementById('khu-select')?.addEventListener('change', (e)=>{ state.khu = e.target.value; render(); });
   document.querySelectorAll('[data-quickfilter]').forEach(b=> b.addEventListener('click', ()=>{
     if(b.dataset.resetall){ state.category='all'; state.nha='all'; state.search=''; }
-    else if(b.dataset.quickfilter === 'bpdm' || b.dataset.quickfilter === 'mental'){
-      state.category = b.dataset.quickfilter;
-    }
-    state.status = b.dataset.quickfilter === 'over' ? 'over' : (b.dataset.quickfilter === 'bpdm' || b.dataset.quickfilter === 'mental' ? 'ontrack' : state.status);
+    state.status = b.dataset.quickfilter;
     window.scrollTo({top: 0, behavior:'smooth'});
     render();
   }));
+
   document.getElementById('export-toggle')?.addEventListener('click', ()=>{ state.modal='export'; render(); });
+
   document.getElementById('import-toggle')?.addEventListener('click', ()=>{
     document.getElementById('import-file-input')?.click();
   });
@@ -977,7 +1006,7 @@ function wireEvents(){
     render();
     try{
       const result = await importFromFile(file);
-      state.importStatus = `Đã nhập ${result.ok}/${result.total} bệnh nhân thành công` + (result.fail ? `, ${result.fail} dòng bị bỏ qua.` : '.');
+      state.importStatus = `Đã nhập ${result.ok}/${result.total} bệnh nhân thành công` + (result.fail ? `, ${result.fail} dòng bị bỏ qua (thiếu họ tên hoặc lỗi).` : '.');
     }catch(err){
       console.error('import failed', err);
       state.importStatus = 'Nhập file thất bại. Kiểm tra lại định dạng file Excel/CSV.';
@@ -985,13 +1014,17 @@ function wireEvents(){
     render();
   });
   document.getElementById('dismiss-status')?.addEventListener('click', ()=>{ state.importStatus=''; render(); });
+
   document.getElementById('retry-db')?.addEventListener('click', ()=>{ dbReady=false; dbError=null; render(); initDb(); });
+
   const searchInput = document.getElementById('search-input');
   if(searchInput){
     searchInput.addEventListener('input', (e)=>{ state.search = e.target.value; render(); });
+    // restore focus/cursor after re-render
     searchInput.focus();
     const val = searchInput.value; searchInput.value=''; searchInput.value = val;
   }
+
   document.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=>{
     const p = patients.find(x=>x.id===b.dataset.id);
     state.editing = p; state.formError=''; state.modal='form'; render();
@@ -1001,11 +1034,13 @@ function wireEvents(){
     state.deleteTarget = p; state.modal='delete'; render();
   }));
 }
+
 /* ============================= UTIL ============================= */
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function escapeAttr(s){ return escapeHtml(s); }
+
 /* ============================= BOOT ============================= */
 render();
 initDb();
