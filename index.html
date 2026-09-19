@@ -126,12 +126,14 @@
 
   /* Stat strip (compact) */
   .stat-strip{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
-  .stat-seg{flex:1;display:flex;flex-direction:row;align-items:baseline;justify-content:center;gap:5px;padding:9px 4px;border:none;border-right:1px solid var(--border);background:transparent;font-family:inherit;cursor:pointer;transition:.12s ease;min-width:0;}
+  .stat-seg{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:8px 4px;border:none;border-right:1px solid var(--border);background:transparent;font-family:inherit;cursor:pointer;transition:.12s ease;min-width:0;}
   .stat-seg:last-child{border-right:none;}
   .stat-seg:hover{background:var(--bg);}
   .stat-seg:active{transform:translateY(1px);}
+  .stat-seg-main{display:flex;align-items:baseline;gap:5px;}
   .stat-seg-num{font-size:17px;font-weight:800;font-family:'Times New Roman', Times, serif;line-height:1;color:var(--ink);white-space:nowrap;}
   .stat-seg-lbl{font-size:10.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .stat-seg-sub{font-size:9.5px;color:var(--muted-2);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   .stat-seg.accent-ok .stat-seg-num{color:var(--ok);}
   .stat-seg.accent-warn .stat-seg-num{color:var(--warn);}
   .stat-seg.accent-danger .stat-seg-num{color:var(--danger);}
@@ -162,17 +164,17 @@
   tbody td{padding:11px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;font-size:13.5px;word-wrap:break-word;overflow-wrap:break-word;}
   tbody td:last-child{border-right:none;}
   /* balanced column widths, proportional to expected content */
-  thead th:nth-child(1), tbody td:nth-child(1){width:3.5%;}
+  thead th:nth-child(1), tbody td:nth-child(1){width:5%;}
   thead th:nth-child(2), tbody td:nth-child(2){width:14%;}
   thead th:nth-child(3), tbody td:nth-child(3){width:7%;}
-  thead th:nth-child(4), tbody td:nth-child(4){width:7%;}
-  thead th:nth-child(5), tbody td:nth-child(5){width:14%;}
-  thead th:nth-child(6), tbody td:nth-child(6){width:13%;}
-  thead th:nth-child(7), tbody td:nth-child(7){width:7%;}
-  thead th:nth-child(8), tbody td:nth-child(8){width:7%;}
-  thead th:nth-child(9), tbody td:nth-child(9){width:8.5%;}
-  thead th:nth-child(10), tbody td:nth-child(10){width:8.5%;}
-  thead th:nth-child(11), tbody td:nth-child(11){width:9%;}
+  thead th:nth-child(4), tbody td:nth-child(4){width:6.5%;}
+  thead th:nth-child(5), tbody td:nth-child(5){width:13.5%;}
+  thead th:nth-child(6), tbody td:nth-child(6){width:12.5%;}
+  thead th:nth-child(7), tbody td:nth-child(7){width:6.5%;}
+  thead th:nth-child(8), tbody td:nth-child(8){width:6.5%;}
+  thead th:nth-child(9), tbody td:nth-child(9){width:8%;}
+  thead th:nth-child(10), tbody td:nth-child(10){width:8%;}
+  thead th:nth-child(11), tbody td:nth-child(11){width:8%;}
   thead th:nth-child(12), tbody td:nth-child(12){width:4.5%;}
   tbody tr:last-child td{border-bottom:none;}
   tbody tr:hover{background:var(--primary-tint);}
@@ -589,14 +591,15 @@ function renderStatusBanner(){
 
 function renderStats(c){
   const items = [
-    {key:'all', resetall:true, cls:'', num:c.total, lbl:'Tổng', title:'Xem tất cả'},
+    {key:'all', resetall:true, cls:'', num:c.total, lbl:'Tổng', title:'Xem tất cả', sub:`HA ${c.bp} · TT ${c.mental} · TĐ ${c.dm}`},
     {key:'ontrack', cls:'accent-ok', num:c.ontrack, lbl:'Đang uống', title:'Xem danh sách đang uống thuốc'},
     {key:'upcoming', cls:'accent-warn', num:c.soon + c.due, lbl:'Cần nhắc', title:'Xem danh sách cần nhắc lịch'},
     {key:'over', cls:'accent-danger', num:c.over, lbl:'Quá hạn', title:'Xem danh sách quá hạn'},
   ];
   return `<div class="stat-strip">
     ${items.map(it=>`<button class="stat-seg ${it.cls}" data-quickfilter="${it.key}" ${it.resetall?'data-resetall="1"':''} title="${it.title}">
-      <span class="stat-seg-num">${it.num}</span><span class="stat-seg-lbl">${it.lbl}</span>
+      <span class="stat-seg-main"><span class="stat-seg-num">${it.num}</span><span class="stat-seg-lbl">${it.lbl}</span></span>
+      ${it.sub ? `<span class="stat-seg-sub">${it.sub}</span>` : ''}
     </button>`).join('')}
   </div>`;
 }
