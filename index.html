@@ -152,16 +152,16 @@
   tbody td:last-child{border-right:none;}
   /* balanced column widths, proportional to expected content */
   thead th:nth-child(1), tbody td:nth-child(1){width:4%;}
-  thead th:nth-child(2), tbody td:nth-child(2){width:15%;}
+  thead th:nth-child(2), tbody td:nth-child(2){width:17%;}
   thead th:nth-child(3), tbody td:nth-child(3){width:6%;}
   thead th:nth-child(4), tbody td:nth-child(4){width:6%;}
   thead th:nth-child(5), tbody td:nth-child(5){width:13%;}
-  thead th:nth-child(6), tbody td:nth-child(6){width:12%;}
+  thead th:nth-child(6), tbody td:nth-child(6){width:14%;}
   thead th:nth-child(7), tbody td:nth-child(7){width:5%;}
   thead th:nth-child(8), tbody td:nth-child(8){width:5%;}
   thead th:nth-child(9), tbody td:nth-child(9){width:10%;}
   thead th:nth-child(10), tbody td:nth-child(10){width:11%;}
-  thead th:nth-child(11), tbody td:nth-child(11){width:9%;}
+  thead th:nth-child(11), tbody td:nth-child(11){width:5%;}
   thead th:nth-child(12), tbody td:nth-child(12){width:4%;}
   /* center all column content except the name column */
   thead th:not(:nth-child(2)){text-align:center;}
@@ -217,6 +217,11 @@
   .radio-row{display:flex;gap:14px;padding-top:2px;}
   .radio-row label{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--ink);}
   .chip-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .filter-group-wide{flex:2 1 220px;}
+  .chip-filter-group{display:flex;gap:5px;flex-wrap:wrap;}
+  .chip-filter{padding:6px 12px;border:1px solid var(--border);border-radius:999px;background:var(--surface);color:var(--muted);font-size:12px;font-weight:600;}
+  .chip-filter.on{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .stat-seg.is-active{background:var(--bg);box-shadow:inset 0 -3px 0 var(--primary);}
   .chip{padding:8px 16px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--muted);font-size:13px;font-weight:600;}
   .chip.on{background:var(--primary);border-color:var(--primary);color:#fff;}
   .chip-hint{font-size:11.5px;color:var(--muted-2);margin-top:6px;}
@@ -237,11 +242,18 @@
     .actions-row button{flex:1;justify-content:center;min-width:120px;}
     .form-grid{grid-template-columns:1fr;}
     .tbl-scroll{-webkit-overflow-scrolling:touch;}
-    table{min-width:760px;}
-    thead th, tbody td{padding:8px 6px;font-size:12.5px;}
+    table{min-width:840px;}
+    thead th, tbody td{padding:6px 6px;font-size:12.5px;line-height:1.25;}
     thead th{font-size:10.5px;}
+    thead th:nth-child(2), tbody td:nth-child(2){width:23%;}
     .icon-btn{padding:7px 8px;}
     .icon-btn svg{width:14px;height:14px;}
+    /* compact stat strip so the patient list gets more room */
+    .stat-strip{margin-bottom:10px;}
+    .stat-seg{padding:6px 2px;gap:0;}
+    .stat-seg-num{font-size:15px;}
+    .stat-seg-lbl{font-size:9px;}
+    .stat-seg-sub{font-size:8px;}
   }
 </style>
 
@@ -276,7 +288,7 @@ let unsub = null;
 
 let state = {
   isAdmin: (localStorage.getItem('cms_isAdmin') === '1'),
-  category: 'all',      // all | mental | bp | dm
+  categories: [],        // [] = all; otherwise array of 'mental'|'bp'|'dm'
   nha: 'all',            // 'all' or a specific nha value
   khu: 'all',            // 'all' or a specific khu value
   status: 'ontrack',     // all | ontrack | soon | due | over
@@ -390,21 +402,26 @@ async function deletePatient(id){
 /* ============================= DERIVED DATA ============================= */
 function distinctNha(){
   const set = new Set(patients.map(p => (p.nha||'').trim()).filter(Boolean));
-  return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
+  return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));
 }
 
 function distinctKhu(){
   const set = new Set(patients.map(p => (p.khu||'').trim()).filter(Boolean));
-  return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi'));
+  return Array.from(set).sort((a,b)=>a.localeCompare(b,'vi',{numeric:true}));
+}
+
+/* Patients scoped by diagnosis(es) + Nhà + Khu only — the base every stat/alert/list is drawn from */
+function scopedPatients(){
+  return patients
+    .map(p => ({...p, _status: computeStatus(p)}))
+    .filter(p => state.categories.length === 0 ? true : loaiArray(p).some(c => state.categories.includes(c)))
+    .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha)
+    .filter(p => state.khu === 'all' ? true : (p.khu||'').trim() === state.khu);
 }
 
 function filteredPatients(){
   const q = normalizeVN(state.search.trim());
-  return patients
-    .map(p => ({...p, _status: computeStatus(p)}))
-    .filter(p => state.category === 'all' ? true : loaiArray(p).includes(state.category))
-    .filter(p => state.nha === 'all' ? true : (p.nha||'').trim() === state.nha)
-    .filter(p => state.khu === 'all' ? true : (p.khu||'').trim() === state.khu)
+  return scopedPatients()
     .filter(p => {
       if(state.status === 'all') return true;
       if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
@@ -431,7 +448,7 @@ function filteredPatients(){
 }
 
 function counts(){
-  const all = patients.map(p => ({...p, _status: computeStatus(p)}));
+  const all = scopedPatients();
   return {
     total: all.length,
     mental: all.filter(p=>loaiArray(p).includes('mental')).length,
@@ -486,6 +503,23 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
   ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:24},{wch:22},{wch:14},{wch:10},{wch:12},{wch:13},{wch:18}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+  const medCounts = {};
+  list.forEach(p => {
+    const t = (p.thuoc||'').trim();
+    if(!t) return;
+    medCounts[t] = (medCounts[t]||0) + 1;
+  });
+  const medRows = Object.entries(medCounts)
+    .sort((a,b)=> b[1]-a[1])
+    .map(([thuoc, soLuong]) => ({ 'Thuốc': thuoc, 'Số bệnh nhân': soLuong }));
+  if(medRows.length){
+    medRows.push({ 'Thuốc': 'TỔNG', 'Số bệnh nhân': list.length });
+    const ws2 = XLSX.utils.json_to_sheet(medRows);
+    ws2['!cols'] = [{wch:28},{wch:14}];
+    XLSX.utils.book_append_sheet(wb, ws2, 'Tong hop thuoc');
+  }
+
   const buf = XLSX.write(wb, {type:'array', bookType:'xlsx'});
   const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 
@@ -577,11 +611,12 @@ function renderStats(c){
   const items = [
     {key:'all', resetall:true, cls:'', num:c.total, lbl:'Tổng', title:'Xem tất cả', sub:`HA ${c.bp} · TT ${c.mental} · TĐ ${c.dm}`},
     {key:'ontrack', cls:'accent-ok', num:c.ontrack, lbl:'Đang uống', title:'Xem danh sách đang uống thuốc'},
-    {key:'upcoming', cls:'accent-warn', num:c.soon + c.due, lbl:'Cần nhắc', title:'Xem danh sách cần nhắc lịch'},
+    {key:'due', cls:'accent-warn', num:c.due, lbl:'Hôm nay', title:'Xem danh sách đến hẹn hôm nay'},
+    {key:'upcoming', cls:'accent-warn', num:c.soon + c.due, lbl:'Cần nhắc', title:'Xem danh sách cần nhắc lịch (mai + hôm nay)'},
     {key:'over', cls:'accent-danger', num:c.over, lbl:'Quá hạn', title:'Xem danh sách quá hạn'},
   ];
   return `<div class="stat-strip">
-    ${items.map(it=>`<button class="stat-seg ${it.cls}" data-quickfilter="${it.key}" ${it.resetall?'data-resetall="1"':''} title="${it.title}">
+    ${items.map(it=>`<button class="stat-seg ${it.cls} ${state.status===it.key?'is-active':''}" data-quickfilter="${it.key}" ${it.resetall?'data-resetall="1"':''} title="${it.title}">
       <span class="stat-seg-main"><span class="stat-seg-num">${it.num}</span><span class="stat-seg-lbl">${it.lbl}</span></span>
       ${it.sub ? `<span class="stat-seg-sub">${it.sub}</span>` : ''}
     </button>`).join('')}
@@ -589,9 +624,8 @@ function renderStats(c){
 }
 
 function renderToolbar(){
-  const catOptions = [['all','Tất cả loại'],['mental','Tâm thần'],['bp','Huyết áp'],['dm','Tiểu đường']];
-  const statusOptions = [['ontrack','Đang uống thuốc'],['upcoming','Cần nhắc lịch'],['soon','Sắp đến hẹn (mai)'],['due','Đến hẹn hôm nay'],['over','Quá hạn'],['all','Tất cả trạng thái']];
   const nhaList = distinctNha();
+  const catChips = [['all','Tất cả'],['mental','Tâm thần'],['bp','Huyết áp'],['dm','Tiểu đường']];
   return `
   <div class="toolbar">
     <div class="search">
@@ -599,17 +633,11 @@ function renderToolbar(){
       <input type="text" id="search-input" placeholder="Tìm theo tên, nhà, khu, ngày khám..." value="${escapeAttr(state.search)}">
     </div>
     <div class="filters-row">
-      <div class="filter-group">
-        <span class="filter-caption">Chẩn đoán</span>
-        <select class="select-filter" id="cat-select">
-          ${catOptions.map(([k,l])=>`<option value="${k}" ${state.category===k?'selected':''}>${l}</option>`).join('')}
-        </select>
-      </div>
-      <div class="filter-group">
-        <span class="filter-caption">Trạng thái</span>
-        <select class="select-filter" id="status-select">
-          ${statusOptions.map(([k,l])=>`<option value="${k}" ${state.status===k?'selected':''}>${l}</option>`).join('')}
-        </select>
+      <div class="filter-group filter-group-wide">
+        <span class="filter-caption">Chẩn đoán (chọn được nhiều)</span>
+        <div class="chip-filter-group" id="cat-chip-group">
+          ${catChips.map(([k,l])=>`<button type="button" class="chip-filter ${k==='all' ? (state.categories.length===0?'on':'') : (state.categories.includes(k)?'on':'')}" data-v="${k}">${l}</button>`).join('')}
+        </div>
       </div>
       <div class="filter-group">
         <span class="filter-caption">Nhà</span>
@@ -666,7 +694,7 @@ function renderTable(list){
       <td data-label="Khu"><span>${escapeHtml(p.khu||'')}</span></td>
       <td data-label="Ngày khám"><span>${fmtDate(p.ngayKham)}</span></td>
       <td data-label="Ngày tái khám"><span>${fmtDate(p.ngayTaiKham)}</span></td>
-      <td data-label="Trạng thái"><span class="status ${st}"><span class="dot"></span>${stLabel}</span></td>
+      <td data-label="Trạng thái"><span class="status ${st}" title="${stLabel}"><span class="dot"></span></span></td>
       <td data-label="Thao tác">
         <div class="row-actions">
           ${state.isAdmin ? `
@@ -983,12 +1011,22 @@ function wireEvents(){
   });
   document.getElementById('btn-add')?.addEventListener('click', ()=>{ state.editing=null; state.formError=''; state.modal='form'; render(); });
 
-  document.getElementById('cat-select')?.addEventListener('change', (e)=>{ state.category = e.target.value; render(); });
-  document.getElementById('status-select')?.addEventListener('change', (e)=>{ state.status = e.target.value; render(); });
+  document.querySelectorAll('#cat-chip-group .chip-filter').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const v = b.dataset.v;
+      if(v === 'all'){
+        state.categories = [];
+      }else{
+        const idx = state.categories.indexOf(v);
+        if(idx >= 0) state.categories.splice(idx,1); else state.categories.push(v);
+      }
+      render();
+    });
+  });
   document.getElementById('nha-select')?.addEventListener('change', (e)=>{ state.nha = e.target.value; render(); });
   document.getElementById('khu-select')?.addEventListener('change', (e)=>{ state.khu = e.target.value; render(); });
   document.querySelectorAll('[data-quickfilter]').forEach(b=> b.addEventListener('click', ()=>{
-    if(b.dataset.resetall){ state.category='all'; state.nha='all'; state.search=''; }
+    if(b.dataset.resetall){ state.categories=[]; state.nha='all'; state.khu='all'; state.search=''; }
     state.status = b.dataset.quickfilter;
     window.scrollTo({top: 0, behavior:'smooth'});
     render();
