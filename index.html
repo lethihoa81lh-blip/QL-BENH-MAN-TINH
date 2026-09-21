@@ -66,22 +66,7 @@
     --shadow: 0 1px 2px rgba(21,38,37,0.06), 0 4px 14px rgba(21,38,37,0.05);
     --radius: 10px;
   }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#101817; --surface:#16211F; --ink:#EAF2F0; --muted:#9FB3AF; --muted-2:#71827E;
-      --border:#233330; --primary:#3FBF9D; --primary-dark:#59D6B4; --primary-tint:#173A32;
-      --mental:#B79EE0; --mental-tint:#2A2138; --bp:#7FC4DE; --bp-tint:#152C34;
-      --warn:#E3B15C; --warn-tint:#3A2E11; --danger:#E8776A; --danger-tint:#3A1913; --ok:#5FD196;
-      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#101817; --surface:#16211F; --ink:#EAF2F0; --muted:#9FB3AF; --muted-2:#71827E;
-    --border:#233330; --primary:#3FBF9D; --primary-dark:#59D6B4; --primary-tint:#173A32;
-    --mental:#B79EE0; --mental-tint:#2A2138; --bp:#7FC4DE; --bp-tint:#152C34;
-    --warn:#E3B15C; --warn-tint:#3A2E11; --danger:#E8776A; --danger-tint:#3A1913; --ok:#5FD196;
-    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
-  }
+  /* Theme is intentionally always light for readability on clinic devices. */
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
   body{font-family:'Times New Roman', Times, serif;font-size:15px;line-height:1.5;}
@@ -147,7 +132,9 @@
   .search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted-2);}
   .spacer{flex:1;}
   .filters-row{display:flex;gap:8px;flex-wrap:wrap;}
-  .filters-row select{flex:1;min-width:130px;}
+  .filter-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:130px;}
+  .filter-caption{font-size:10.5px;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding-left:2px;}
+  .filter-group select{width:100%;}
   .actions-row{display:flex;gap:8px;align-items:center;}
   .select-filter{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:600;}
   .select-filter:focus{outline:2px solid var(--primary);outline-offset:-1px;}
@@ -185,7 +172,7 @@
   .badge.mental{background:var(--mental-tint);color:var(--mental);}
   .badge.bp{background:var(--bp-tint);color:var(--bp);}
   .badge.dm{background:#FDF0E5;color:#B5591E;}
-  :root[data-theme="dark"] .badge.dm, @media (prefers-color-scheme:dark){ .badge.dm{background:#3A2712;color:#E3944F;} }
+  /* .badge.dm uses the light-mode colors defined above at all times. */
   .status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;}
   .status .dot{width:7px;height:7px;border-radius:50%;}
   .status.ok{color:var(--ok);} .status.ok .dot{background:var(--ok);}
@@ -240,7 +227,7 @@
     .stats{grid-template-columns:1fr 1fr;}
     .toolbar{flex-direction:column;align-items:stretch;}
     .search{max-width:none;}
-    .filters-row select{flex:1;min-width:0;}
+    .filter-group{flex:1 1 45%;min-width:0;}
     .actions-row{width:100%;flex-wrap:wrap;}
     .actions-row button{flex:1;justify-content:center;min-width:120px;}
     .form-grid{grid-template-columns:1fr;}
@@ -615,20 +602,32 @@ function renderToolbar(){
       <input type="text" id="search-input" placeholder="Tìm theo tên, nhà, khu, ngày khám..." value="${escapeAttr(state.search)}">
     </div>
     <div class="filters-row">
-      <select class="select-filter" id="cat-select">
-        ${catOptions.map(([k,l])=>`<option value="${k}" ${state.category===k?'selected':''}>${l}</option>`).join('')}
-      </select>
-      <select class="select-filter" id="status-select">
-        ${statusOptions.map(([k,l])=>`<option value="${k}" ${state.status===k?'selected':''}>${l}</option>`).join('')}
-      </select>
-      <select class="select-filter" id="nha-select">
-        <option value="all" ${state.nha==='all'?'selected':''}>Tất cả nhà</option>
-        ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${state.nha===n?'selected':''}>${escapeHtml(n)}</option>`).join('')}
-      </select>
-      <select class="select-filter" id="khu-select">
-        <option value="all" ${state.khu==='all'?'selected':''}>Tất cả khu</option>
-        ${distinctKhu().map(k=>`<option value="${escapeAttr(k)}" ${state.khu===k?'selected':''}>Khu ${escapeHtml(k)}</option>`).join('')}
-      </select>
+      <div class="filter-group">
+        <span class="filter-caption">Chẩn đoán</span>
+        <select class="select-filter" id="cat-select">
+          ${catOptions.map(([k,l])=>`<option value="${k}" ${state.category===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-caption">Trạng thái</span>
+        <select class="select-filter" id="status-select">
+          ${statusOptions.map(([k,l])=>`<option value="${k}" ${state.status===k?'selected':''}>${l}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-caption">Nhà</span>
+        <select class="select-filter" id="nha-select">
+          <option value="all" ${state.nha==='all'?'selected':''}>Tất cả nhà</option>
+          ${nhaList.map(n=>`<option value="${escapeAttr(n)}" ${state.nha===n?'selected':''}>Nhà ${escapeHtml(n)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-caption">Khu</span>
+        <select class="select-filter" id="khu-select">
+          <option value="all" ${state.khu==='all'?'selected':''}>Tất cả khu</option>
+          ${distinctKhu().map(k=>`<option value="${escapeAttr(k)}" ${state.khu===k?'selected':''}>Khu ${escapeHtml(k)}</option>`).join('')}
+        </select>
+      </div>
     </div>
     <div class="spacer"></div>
     <div class="actions-row">
@@ -675,7 +674,7 @@ function renderTable(list){
         <div class="row-actions">
           ${state.isAdmin ? `
             <button class="icon-btn edit-btn" data-id="${p.id}" title="Sửa">${ICON.edit}</button>
-            <button class="icon-btn del" data-id="${p.id}" title="Xoá">${ICON.trash}</button>
+            <button class="icon-btn del" data-id="${p.id}" title="Xoá (khi bệnh nhân ngừng điều trị)">${ICON.trash}</button>
           ` : '—'}
         </div>
       </td>
@@ -943,6 +942,7 @@ function renderDeleteModal(){
       <div class="modal-head"><h3>Xoá bệnh nhân</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
       <div class="modal-body">
         <p style="margin:0 0 4px;">Bạn có chắc muốn xoá hồ sơ của <b>${escapeHtml(p?.hoTen||'')}</b>?</p>
+        <p style="margin:0 0 4px;color:var(--muted);font-size:12.5px;">Dùng khi bệnh nhân đã ngừng điều trị hoặc không còn theo dõi nữa.</p>
         <p style="margin:0;color:var(--muted);font-size:12.5px;">Hành động này không thể hoàn tác.</p>
       </div>
       <div class="modal-foot">
