@@ -419,18 +419,20 @@ function scopedPatients(){
     .filter(p => state.khu === 'all' ? true : (p.khu||'').trim() === state.khu);
 }
 
+function matchesStatus(p){
+  if(state.status === 'all') return true;
+  if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
+  if(state.status === 'upcoming') return p._status === 'due' || p._status === 'soon';
+  if(state.status === 'soon') return p._status === 'soon';
+  if(state.status === 'due') return p._status === 'due';
+  if(state.status === 'over') return p._status === 'over';
+  return true;
+}
+
 function filteredPatients(){
   const q = normalizeVN(state.search.trim());
   return scopedPatients()
-    .filter(p => {
-      if(state.status === 'all') return true;
-      if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
-      if(state.status === 'upcoming') return p._status === 'due' || p._status === 'soon';
-      if(state.status === 'soon') return p._status === 'soon';
-      if(state.status === 'due') return p._status === 'due';
-      if(state.status === 'over') return p._status === 'over';
-      return true;
-    })
+    .filter(matchesStatus)
     .filter(p => {
       if(!q) return true;
       const hay = normalizeVN(p.hoTen) + ' ' + normalizeVN(p.nha) + ' ' + normalizeVN(p.khu) + ' ' +
@@ -484,7 +486,8 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
   const kf = khuFilterArg !== undefined ? khuFilterArg : state.khu;
   const all = patients.map(p => ({...p, _status: computeStatus(p)}))
     .filter(p => nf === 'all' ? true : (p.nha||'').trim() === nf)
-    .filter(p => kf === 'all' ? true : (p.khu||'').trim() === kf);
+    .filter(p => kf === 'all' ? true : (p.khu||'').trim() === kf)
+    .filter(matchesStatus);
   let list, filename, sheetName;
   const nhaSlug = nf === 'all' ? '' : ('_Nha-' + nf.replace(/[^\p{L}\p{N}]+/gu, '-'));
   const khuSlug = kf === 'all' ? '' : ('_Khu-' + kf.replace(/[^\p{L}\p{N}]+/gu, '-'));
@@ -878,11 +881,13 @@ function renderExportModal(){
   const khuList = distinctKhu();
   let localNha = state.nha;
   let localKhu = state.khu;
+  const statusLabelMap = {all:'Tất cả trạng thái', ontrack:'Đang uống thuốc', due:'Đến hẹn hôm nay', upcoming:'Cần nhắc lịch (mai + hôm nay)', soon:'Sắp đến hẹn (ngày mai)', over:'Quá hạn tái khám'};
   const wrap = el(`<div class="overlay" id="overlay"></div>`);
   wrap.appendChild(el(`
     <div class="modal modal-sm">
       <div class="modal-head"><h3>Xuất báo cáo Excel</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
       <div class="modal-body">
+        <div class="chip-hint" style="margin-bottom:12px;">Đang áp dụng trạng thái đã chọn ở thống kê: <b>${statusLabelMap[state.status] || 'Tất cả'}</b>. Đổi ở ô thống kê trước khi xuất nếu muốn khác.</div>
         <div class="form-grid">
           <div class="field">
             <label>Chọn Nhà để xuất</label>
