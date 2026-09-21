@@ -154,11 +154,11 @@
   thead th:nth-child(1), tbody td:nth-child(1){width:5%;}
   thead th:nth-child(2), tbody td:nth-child(2){width:14%;}
   thead th:nth-child(3), tbody td:nth-child(3){width:7%;}
-  thead th:nth-child(4), tbody td:nth-child(4){width:6.5%;}
+  thead th:nth-child(4), tbody td:nth-child(4){width:9.5%;}
   thead th:nth-child(5), tbody td:nth-child(5){width:13.5%;}
   thead th:nth-child(6), tbody td:nth-child(6){width:12.5%;}
-  thead th:nth-child(7), tbody td:nth-child(7){width:6.5%;}
-  thead th:nth-child(8), tbody td:nth-child(8){width:6.5%;}
+  thead th:nth-child(7), tbody td:nth-child(7){width:5%;}
+  thead th:nth-child(8), tbody td:nth-child(8){width:5%;}
   thead th:nth-child(9), tbody td:nth-child(9){width:8%;}
   thead th:nth-child(10), tbody td:nth-child(10){width:8%;}
   thead th:nth-child(11), tbody td:nth-child(11){width:8%;}
@@ -659,23 +659,23 @@ function renderTable(list){
     const stLabel = st === 'over' ? 'Quá hạn' : st === 'due' ? 'Đến hẹn' : st === 'soon' ? 'Sắp đến hẹn' : 'Đang uống';
     return `
     <tr data-id="${p.id}">
-      <td class="stt" data-label="STT">${idx+1}</td>
-      <td class="name" data-label="Họ và tên">${escapeHtml(p.hoTen||'')}</td>
-      <td data-label="Năm sinh">${escapeHtml(p.namSinh||'')}</td>
-      <td data-label="Giới tính">${escapeHtml(p.gioiTinh||'')}</td>
+      <td class="stt" data-label="STT"><span>${idx+1}</span></td>
+      <td class="name" data-label="Họ và tên"><span>${escapeHtml(p.hoTen||'')}</span></td>
+      <td data-label="Năm sinh"><span>${escapeHtml(p.namSinh||'')}</span></td>
+      <td data-label="Giới tính"><span>${escapeHtml(p.gioiTinh||'')}</span></td>
       <td data-label="Chẩn đoán"><span class="badge-group">${loaiArray(p).map(c=>`<span class="badge ${categoryBadgeClass(c)}">${categoryLabel(c)}</span>`).join('')}</span></td>
-      <td data-label="Thuốc">${escapeHtml(p.thuoc||'')}</td>
-      <td data-label="Nhà">${escapeHtml(p.nha||'')}</td>
-      <td data-label="Khu">${escapeHtml(p.khu||'')}</td>
-      <td data-label="Ngày khám">${fmtDate(p.ngayKham)}</td>
-      <td data-label="Ngày tái khám">${fmtDate(p.ngayTaiKham)}</td>
+      <td data-label="Thuốc"><span>${escapeHtml(p.thuoc||'')}</span></td>
+      <td data-label="Nhà"><span>${escapeHtml(p.nha||'')}</span></td>
+      <td data-label="Khu"><span>${escapeHtml(p.khu||'')}</span></td>
+      <td data-label="Ngày khám"><span>${fmtDate(p.ngayKham)}</span></td>
+      <td data-label="Ngày tái khám"><span>${fmtDate(p.ngayTaiKham)}</span></td>
       <td data-label="Trạng thái"><span class="status ${st}"><span class="dot"></span>${stLabel}</span></td>
       <td data-label="Thao tác">
         <div class="row-actions">
           ${state.isAdmin ? `
             <button class="icon-btn edit-btn" data-id="${p.id}" title="Sửa">${ICON.edit}</button>
             <button class="icon-btn del" data-id="${p.id}" title="Xoá (khi bệnh nhân ngừng điều trị)">${ICON.trash}</button>
-          ` : '—'}
+          ` : '<span>—</span>'}
         </div>
       </td>
     </tr>`;
