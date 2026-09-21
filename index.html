@@ -634,7 +634,7 @@ function renderToolbar(){
     </div>
     <div class="filters-row">
       <div class="filter-group filter-group-wide">
-        <span class="filter-caption">Chẩn đoán (chọn được nhiều)</span>
+        <span class="filter-caption">Chẩn đoán </span>
         <div class="chip-filter-group" id="cat-chip-group">
           ${catChips.map(([k,l])=>`<button type="button" class="chip-filter ${k==='all' ? (state.categories.length===0?'on':'') : (state.categories.includes(k)?'on':'')}" data-v="${k}">${l}</button>`).join('')}
         </div>
