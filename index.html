@@ -146,9 +146,9 @@
   /* Table */
   .tbl-scroll{overflow-x:auto;}
   table{width:100%;border-collapse:collapse;min-width:980px;border:1px solid var(--border);table-layout:fixed;}
-  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:11px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:var(--bg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700;padding:7px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);background:var(--bg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   thead th:last-child{border-right:none;}
-  tbody td{padding:11px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;font-size:13.5px;word-wrap:break-word;overflow-wrap:break-word;}
+  tbody td{padding:6px 10px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:middle;font-size:13.5px;line-height:1.3;word-wrap:break-word;overflow-wrap:break-word;}
   tbody td:last-child{border-right:none;}
   /* balanced column widths, proportional to expected content */
   thead th:nth-child(1), tbody td:nth-child(1){width:4%;}
@@ -180,8 +180,8 @@
   /* .badge.dm uses the light-mode colors defined above at all times. */
   .status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;}
   .status .dot{width:7px;height:7px;border-radius:50%;}
-  .status.ok{color:var(--ok);} .status.ok .dot{background:var(--ok);}
-  .status.soon{color:var(--primary);} .status.soon .dot{background:var(--primary);}
+  .status.active{color:var(--ok);} .status.active .dot{background:var(--ok);}
+  .status.soon{color:var(--warn);} .status.soon .dot{background:var(--warn);}
   .status.due{color:var(--warn);} .status.due .dot{background:var(--warn);}
   .status.over{color:var(--danger);} .status.over .dot{background:var(--danger);}
   .row-actions{display:flex;gap:4px;justify-content:flex-end;}
@@ -487,7 +487,8 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
   const all = patients.map(p => ({...p, _status: computeStatus(p)}))
     .filter(p => nf === 'all' ? true : (p.nha||'').trim() === nf)
     .filter(p => kf === 'all' ? true : (p.khu||'').trim() === kf)
-    .filter(matchesStatus);
+    .filter(matchesStatus)
+    .filter(p => state.categories.length === 0 ? true : loaiArray(p).some(c => state.categories.includes(c)));
   let list, filename, sheetName;
   const nhaSlug = nf === 'all' ? '' : ('_Nha-' + nf.replace(/[^\p{L}\p{N}]+/gu, '-'));
   const khuSlug = kf === 'all' ? '' : ('_Khu-' + kf.replace(/[^\p{L}\p{N}]+/gu, '-'));
@@ -637,7 +638,7 @@ function renderToolbar(){
     </div>
     <div class="filters-row">
       <div class="filter-group filter-group-wide">
-        <span class="filter-caption">Chẩn đoán </span>
+        <span class="filter-caption">Chẩn đoán</span>
         <div class="chip-filter-group" id="cat-chip-group">
           ${catChips.map(([k,l])=>`<button type="button" class="chip-filter ${k==='all' ? (state.categories.length===0?'on':'') : (state.categories.includes(k)?'on':'')}" data-v="${k}">${l}</button>`).join('')}
         </div>
@@ -887,7 +888,7 @@ function renderExportModal(){
     <div class="modal modal-sm">
       <div class="modal-head"><h3>Xuất báo cáo Excel</h3><button class="close-x" id="modal-close">${ICON.x}</button></div>
       <div class="modal-body">
-        <div class="chip-hint" style="margin-bottom:12px;">Đang áp dụng trạng thái đã chọn ở thống kê: <b>${statusLabelMap[state.status] || 'Tất cả'}</b>. Đổi ở ô thống kê trước khi xuất nếu muốn khác.</div>
+        <div class="chip-hint" style="margin-bottom:12px;">Đang áp dụng trạng thái: <b>${statusLabelMap[state.status] || 'Tất cả'}</b>${state.categories.length ? ` · Chẩn đoán đang lọc: <b>${state.categories.map(categoryLabel).join(', ')}</b>` : ''}. Đổi ở thanh lọc phía trên trước khi xuất nếu muốn khác.</div>
         <div class="form-grid">
           <div class="field">
             <label>Chọn Nhà để xuất</label>
