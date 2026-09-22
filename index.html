@@ -421,7 +421,7 @@ function scopedPatients(){
 
 function matchesStatus(p){
   if(state.status === 'all') return true;
-  if(state.status === 'ontrack') return p._status === 'active' || p._status === 'soon';
+  if(state.status === 'ontrack') return p._status === 'active';
   if(state.status === 'upcoming') return p._status === 'due' || p._status === 'soon';
   if(state.status === 'soon') return p._status === 'soon';
   if(state.status === 'due') return p._status === 'due';
@@ -501,7 +501,11 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
     filename = 'Danh_sach_Huyet_ap_Tieu_duong' + nhaSlug + khuSlug + '_' + todayStr() + '.xlsx';
     sheetName = 'Huyet ap - Tieu duong';
   }
-  list.sort((a,b)=> (a.hoTen||'').localeCompare(b.hoTen||'', 'vi'));
+  list.sort((a,b)=> {
+    const n = (a.nha||'').localeCompare(b.nha||'', 'vi', {numeric:true});
+    if(n) return n;
+    return (a.hoTen||'').localeCompare(b.hoTen||'', 'vi');
+  });
   const rows = buildRows(list);
   const ws = XLSX.utils.json_to_sheet(rows);
   ws['!cols'] = [{wch:5},{wch:24},{wch:9},{wch:9},{wch:24},{wch:22},{wch:14},{wch:10},{wch:12},{wch:13},{wch:18}];
@@ -615,9 +619,6 @@ function renderStats(c){
   const items = [
     {key:'all', resetall:true, cls:'', num:c.total, lbl:'Tổng', title:'Xem tất cả', sub:`HA ${c.bp} · TT ${c.mental} · TĐ ${c.dm}`},
     {key:'ontrack', cls:'accent-ok', num:c.ontrack, lbl:'Đang uống', title:'Xem danh sách đang uống thuốc'},
-    {key:'due', cls:'accent-warn', num:c.due, lbl:'Hôm nay', title:'Xem danh sách đến hẹn hôm nay'},
-    {key:'upcoming', cls:'accent-warn', num:c.soon + c.due, lbl:'Cần nhắc', title:'Xem danh sách cần nhắc lịch (mai + hôm nay)'},
-    {key:'over', cls:'accent-danger', num:c.over, lbl:'Quá hạn', title:'Xem danh sách quá hạn'},
   ];
   return `<div class="stat-strip">
     ${items.map(it=>`<button class="stat-seg ${it.cls} ${state.status===it.key?'is-active':''}" data-quickfilter="${it.key}" ${it.resetall?'data-resetall="1"':''} title="${it.title}">
