@@ -649,7 +649,7 @@ function renderToolbar(){
       </div>
       <button class="btn sm filter-toggle-btn ${state.filtersOpen?'on':''}" id="filters-toggle">${ICON.filter} Bộ lọc${activeCount>0?` (${activeCount})`:''} ${state.filtersOpen?ICON.chevronUp:ICON.chevronDown}</button>
     </div>
-    <div class="filters-row" ${state.filtersOpen?'':'hidden'}>
+    <div class="filters-row" style="display:${state.filtersOpen ? 'flex' : 'none'};">
       <div class="filter-group filter-group-wide">
         <span class="filter-caption">Chẩn đoán (chọn được nhiều)</span>
         <div class="chip-filter-group" id="cat-chip-group">
