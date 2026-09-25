@@ -517,15 +517,20 @@ async function exportGroup(kind, nhaFilterArg, khuFilterArg){
 
   const medCounts = {};
   list.forEach(p => {
-    const t = (p.thuoc||'').trim();
-    if(!t) return;
-    medCounts[t] = (medCounts[t]||0) + 1;
+    const raw = (p.thuoc||'').trim();
+    if(!raw) return;
+    // Split combination prescriptions (e.g. "Amlodipin 5mg + Lipcor 50mg") so each
+    // individual medicine is tallied together with patients taking it alone.
+    const parts = raw.split(/\s*\+\s*/).map(s=>s.trim()).filter(Boolean);
+    parts.forEach(part => {
+      medCounts[part] = (medCounts[part]||0) + 1;
+    });
   });
   const medRows = Object.entries(medCounts)
     .sort((a,b)=> b[1]-a[1])
     .map(([thuoc, soLuong]) => ({ 'Thuốc': thuoc, 'Số bệnh nhân': soLuong }));
   if(medRows.length){
-    medRows.push({ 'Thuốc': 'TỔNG', 'Số bệnh nhân': list.length });
+    medRows.push({ 'Thuốc': 'TỔNG SỐ BỆNH NHÂN', 'Số bệnh nhân': list.length });
     const ws2 = XLSX.utils.json_to_sheet(medRows);
     ws2['!cols'] = [{wch:28},{wch:14}];
     XLSX.utils.book_append_sheet(wb, ws2, 'Tong hop thuoc');
