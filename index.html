@@ -1075,14 +1075,35 @@ function wireEvents(){
 
   document.getElementById('retry-db')?.addEventListener('click', ()=>{ dbReady=false; dbError=null; render(); initDb(); });
 
-  const searchInput = document.getElementById('search-input');
-  if(searchInput){
-    searchInput.addEventListener('input', (e)=>{ state.search = e.target.value; render(); });
-    // restore focus/cursor after re-render
-    searchInput.focus();
-    const val = searchInput.value; searchInput.value=''; searchInput.value = val;
-  }
+  
+const searchInput = document.getElementById('search-input');
 
+if (searchInput) {
+  let isComposing = false;
+
+  searchInput.addEventListener('compositionstart', () => {
+    isComposing = true;
+  });
+
+  searchInput.addEventListener('input', (e) => {
+    state.search = e.target.value;
+
+    if (!isComposing && !e.isComposing) {
+      render();
+    }
+  });
+
+  searchInput.addEventListener('compositionend', (e) => {
+    isComposing = false;
+    state.search = e.target.value;
+    render();
+  });
+
+  searchInput.focus();
+  const val = searchInput.value;
+  searchInput.value = '';
+  searchInput.value = val;
+}
   document.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=>{
     const p = patients.find(x=>x.id===b.dataset.id);
     state.editing = p; state.formError=''; state.modal='form'; render();
