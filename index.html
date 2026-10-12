@@ -4,12 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quản lý Bệnh mạn tính</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="module">
   // ===== Firebase setup =====
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
   import {
-    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot
+    getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+    collection, doc, addDoc, updateDoc, deleteDoc, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js";
   import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-auth.js";
 
@@ -23,7 +30,15 @@
   };
 
   const fbApp = initializeApp(firebaseConfig);
-  const fbDb = getFirestore(fbApp);
+  // Keep a local copy of the patient list on the device, so the list appears instantly
+  // on later visits and then refreshes from the server. Falls back to the normal setup if unsupported.
+  let fbDb;
+  try{
+    fbDb = initializeFirestore(fbApp, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
+  }catch(e){
+    console.warn("Local cache unavailable, using default Firestore:", e);
+    fbDb = getFirestore(fbApp);
+  }
   const fbAuth = getAuth(fbApp);
 
   // Expose a small bridge so the classic (non-module) app script below can use Firestore.
@@ -135,7 +150,13 @@
   .filter-toggle-btn{white-space:nowrap;flex-shrink:0;}
   .filter-toggle-btn svg{width:13px;height:13px;}
   .filter-toggle-btn.on{background:var(--primary-tint);border-color:var(--primary);color:var(--primary-dark);}
-  .filters-row{display:flex;gap:8px;flex-wrap:wrap;width:100%;padding-top:2px;}
+  .filters-row{display:flex;gap:8px;flex-wrap:wrap;width:100%;padding-top:2px;align-items:flex-start;}
+  .multi-dd-btn{display:flex;align-items:center;justify-content:space-between;gap:6px;width:100%;text-align:left;font-family:inherit;cursor:pointer;}
+  .multi-dd-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .multi-dd-btn svg{width:14px;height:14px;flex-shrink:0;}
+  .multi-dd-panel{flex-direction:column;gap:4px;padding:6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);}
+  .multi-dd-panel .chip-filter{border-radius:7px;text-align:left;display:flex;justify-content:space-between;align-items:center;font-size:13px;}
+  .multi-dd-panel .chip-filter.on::after{content:"\2713";}
   .filter-group{display:flex;flex-direction:column;gap:3px;flex:1;min-width:130px;}
   .filter-caption{font-size:10.5px;color:var(--muted-2);font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding-left:2px;}
   .filter-group select{width:100%;}
@@ -307,6 +328,7 @@ let state = {
   loginError: '',
   importStatus: '',
   filtersOpen: false,
+  catOpen: false,
 };
 
 function todayStr(){
@@ -563,10 +585,28 @@ function el(html){
   return t.content.firstElementChild;
 }
 
+function renderListArea(list){
+  return `${renderTable(list)}
+      <div class="foot-note">${list.length} bệnh nhân hiển thị • Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>`;
+}
+
+/* Only the patient table changes while typing in the search box, so the search input
+   itself is never re-created (re-creating it breaks Vietnamese Telex/VNI typing on phones). */
+function updateList(){
+  const area = document.getElementById('list-area');
+  if(!area){ render(); return; }
+  area.innerHTML = renderListArea(filteredPatients());
+  wireRowEvents();
+}
+
 function render(){
   const app = document.getElementById('app');
   const c = counts();
   const list = filteredPatients();
+  const ae = document.activeElement;
+  const keepFocus = !!(ae && ae.id === 'search-input');
+  const selStart = keepFocus ? ae.selectionStart : null;
+  const selEnd = keepFocus ? ae.selectionEnd : null;
 
   app.innerHTML = `
     ${renderHeader()}
@@ -576,11 +616,14 @@ function render(){
     <div class="panel">
       ${renderToolbar()}
       ${renderViewOnlyHint()}
-      ${renderTable(list)}
-      <div class="foot-note">${list.length} bệnh nhân hiển thị • Cập nhật lúc ${new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</div>
+      <div id="list-area">${renderListArea(list)}</div>
     </div>
   `;
   wireEvents();
+  if(keepFocus){
+    const si = document.getElementById('search-input');
+    if(si){ si.focus(); try{ si.setSelectionRange(selStart, selEnd); }catch(e){} }
+  }
   if(state.modal === 'form') renderFormModal();
   if(state.modal === 'delete') renderDeleteModal();
   if(state.modal === 'login') renderLoginModal();
@@ -650,9 +693,10 @@ function renderToolbar(){
       <button class="btn sm filter-toggle-btn ${state.filtersOpen?'on':''}" id="filters-toggle">${ICON.filter} Bộ lọc${activeCount>0?` (${activeCount})`:''} ${state.filtersOpen?ICON.chevronUp:ICON.chevronDown}</button>
     </div>
     <div class="filters-row" style="display:${state.filtersOpen ? 'flex' : 'none'};">
-      <div class="filter-group filter-group-wide">
-        <span class="filter-caption">Chẩn đoán (chọn được nhiều)</span>
-        <div class="chip-filter-group" id="cat-chip-group">
+      <div class="filter-group">
+        <span class="filter-caption">Chẩn đoán</span>
+        <button type="button" class="select-filter multi-dd-btn" id="cat-dd-btn"><span>${state.categories.length===0 ? 'Tất cả' : state.categories.map(categoryLabel).join(', ')}</span>${state.catOpen?ICON.chevronUp:ICON.chevronDown}</button>
+        <div class="multi-dd-panel" id="cat-chip-group" style="display:${state.catOpen ? 'flex' : 'none'};">
           ${catChips.map(([k,l])=>`<button type="button" class="chip-filter ${k==='all' ? (state.categories.length===0?'on':'') : (state.categories.includes(k)?'on':'')}" data-v="${k}">${l}</button>`).join('')}
         </div>
       </div>
@@ -1073,15 +1117,23 @@ function wireEvents(){
   });
   document.getElementById('dismiss-status')?.addEventListener('click', ()=>{ state.importStatus=''; render(); });
 
-  document.getElementById('retry-db')?.addEventListener('click', ()=>{ dbReady=false; dbError=null; render(); initDb(); });
-
   const searchInput = document.getElementById('search-input');
   if(searchInput){
-    searchInput.addEventListener('input', (e)=>{ state.search = e.target.value; render(); });
-    // restore focus/cursor after re-render
-    searchInput.focus();
-    const val = searchInput.value; searchInput.value=''; searchInput.value = val;
+    let searchTimer = null;
+    searchInput.addEventListener('input', (e)=>{
+      state.search = e.target.value;
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(updateList, 120);
+    });
   }
+
+  document.getElementById('cat-dd-btn')?.addEventListener('click', ()=>{ state.catOpen = !state.catOpen; render(); });
+
+  wireRowEvents();
+}
+
+function wireRowEvents(){
+  document.getElementById('retry-db')?.addEventListener('click', ()=>{ dbReady=false; dbError=null; render(); initDb(); });
 
   document.querySelectorAll('.edit-btn').forEach(b=> b.addEventListener('click', ()=>{
     const p = patients.find(x=>x.id===b.dataset.id);
